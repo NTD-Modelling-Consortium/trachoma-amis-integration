@@ -10,25 +10,18 @@ from trachoma.trachoma_functions import(
     getOutputTimes,
 )
 
+def setup_mda(cov_filepath, burnin):
+    MDAData = readPlatformData(cov_filepath, "MDA")
+    MDA_dates = getInterventionDates(MDAData)
+    MDA_times = get_Intervention_times(MDA_dates, START_DATE, burnin)
+    return MDA_times, MDAData
 
-def setup(initial_prevalence: float)
-    params = trachoma_params.params
-    sim_params = trachoma_params.sim_params
-    demog = trachoma_params.demog
-    
-    vals = Set_inits(params, demog, sim_params)
-    ids = random.sample(
-        range(popsize),
-        k=int(initial_prevalence * sim_params['N'])
-    )
-    vals['IndI'][ids] = 1
-    vals['T_latent'][ids] = vals['Ind_latent'][ids]
-    vals['No_Inf'][ids] = 1
 
-    MDA_times, MDAData = setup_mda("scen2c.csv")
-    vacc_times, VaccData = setup_vaccine("scen2c.csv")
-    sim_params['N_MDA'] = len(MDA_times)
-    sim_params['N_Vaccines'] = len(vacc_times)
+def setup_vaccine(cov_filepath, burnin):
+    VaccData = readPlatformData(cov_filepath, "Vaccine")
+    Vaccine_dates = getInterventionDates(VaccData)
+    vacc_times = get_Intervention_times(Vaccine_dates, START_DATE, burnin)
+    return vacc_times, VaccData
 
     return (
         vals,
