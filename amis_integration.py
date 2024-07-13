@@ -19,6 +19,18 @@ __all__ = ["build_transmission_model"]
 START_DATE = date(2019, 1, 1)
 
 
+def set_start_date(datestr: str):
+    global START_DATE
+    try:
+        START_DATE = date.fromisoformat(datestr)
+    except ValueError as e:
+        msg = (
+            f"{e}.\n"
+            "Valid dates formats are YYYY-MM-DD, YYYYMMDD or YYYY-WXX-D."
+        )
+        raise ValueError(msg)
+
+
 def setup_mda(cov_filepath, burnin):
     MDAData = readPlatformData(cov_filepath, "MDA")
     MDA_dates = getInterventionDates(MDAData)
