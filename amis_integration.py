@@ -14,6 +14,8 @@ from trachoma.trachoma_functions import (
 )
 from trachoma_params import params, sim_params, demog
 
+__all__ = ["build_transmission_model"]
+
 START_DATE = date(2019, 1, 1)
 
 
