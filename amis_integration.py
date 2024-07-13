@@ -86,5 +86,12 @@ def get_amis_wrapper(initial_prevalence=0.01, num_cores=-2):
             )
             for i, beta in enumerate(betavals)
         )
-        return
+        # Get the prevalence from the returned values dictionary
+        # Could probably also compute it again here.
+        return np.transpose(
+            [
+                t[0]['True_Prev_Disease_children_1_9'][fitting_points]
+                for t in results
+            ]
+        )
     return run_trachoma
