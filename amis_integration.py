@@ -55,7 +55,27 @@ def setup(initial_prevalence: float):
     )
 
 
-def get_amis_wrapper(initial_prevalence=0.01, num_cores=-2):
+def build_transmission_model(
+        fitting_points: list[int],
+        initial_infect_frac=0.01,
+        num_cores=-2
+):
+    """Create a closure for the AMIS to run the trachoma model.
+
+    Parameters
+    ----------
+    fitting_points
+        A list of indexes of weeks to fit to.
+    initial_infect_frac
+        Fraction of the population initially infected.
+    num_cores
+        Number of computer cores to spread transmission model across.
+
+    Returns
+    -------
+    function
+        A function of three arguments (seeds, betavals, n_sims).
+    """
     (
         init_vals,
         params,
@@ -67,8 +87,9 @@ def get_amis_wrapper(initial_prevalence=0.01, num_cores=-2):
         VaccData,
     ) = setup(initial_prevalence)
 
-    def run_trachoma(seeds, params, n_tims):
-        results, _ = Parallel(n_jobs=num_cores)(
+    def run_trachoma(seeds, betavals, n_sims):
+        results: list[tuple[dict, list]]
+        results = Parallel(n_jobs=num_cores)(
             delayed(run_single_simulation)(
                 pickleData=copy.deepcopy(init_vals),
                 params=params,
