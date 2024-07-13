@@ -82,7 +82,9 @@ def get_amis_wrapper(initial_prevalence=0.01, num_cores=-2):
                 VaccData=VaccData,
                 outputTimes=[],
                 index=i,
+                numpy_state=np.random.get_state(),
             )
-            for i, beta in params
+            for i, beta in enumerate(betavals)
         )
         return
+    return run_trachoma
