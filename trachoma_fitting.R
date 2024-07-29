@@ -28,7 +28,7 @@ initial_infect = 0.01
 num_cores = 1L
 
 model_func <- amis_int_mod$build_transmission_model(
-    fitting_points, initial_infect, num_cores
+    weeks_indices, initial_infect, num_cores
 )
 
 amis_output <- AMISforInfectiousDiseases::amis(

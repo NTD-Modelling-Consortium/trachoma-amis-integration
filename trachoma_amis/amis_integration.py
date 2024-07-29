@@ -99,7 +99,7 @@ def build_transmission_model(
         MDAData,
         vacc_times,
         VaccData,
-    ) = setup(initial_prevalence)
+    ) = setup(initial_infect_frac)
 
     def run_trachoma(seeds, betavals, n_sims):
         results: list[tuple[dict, list]]
@@ -110,7 +110,7 @@ def build_transmission_model(
                 timesim=sim_params["timesim"],
                 burnin=sim_params["burnin"],
                 demog=demog,
-                beta=beta[0],
+                beta=beta,
                 MDA_times=MDA_times,
                 MDAData=MDAData,
                 vacc_times=vacc_times,
