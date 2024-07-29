@@ -31,6 +31,26 @@ model_func <- amis_int_mod$build_transmission_model(
     weeks_indices, initial_infect, num_cores
 )
 
+error_function <- function(e) {
+    err <- reticulate::py_last_error()
+    msg <- sprintf(
+        "Exception type %s was raised during the execution of the model:",
+        err$type
+    )
+    message(msg)
+    stop(print(err))
+}
 amis_output <- AMISforInfectiousDiseases::amis(
-    prevalence_map, model_func, prior
+    prevalence_map,
+    # Wrap model_func so as to print the Python traceback
+    # in case of a raised exception during execution of the
+    # Python model. See
+    # https://rstudio.github.io/reticulate/reference/py_last_error.html
+    function(seeds, params, n_tims) {
+        tryCatch(
+            expr={model_func(seeds, params, n_tims)},
+            error=error_function
+        )
+    },
+    prior
 )
