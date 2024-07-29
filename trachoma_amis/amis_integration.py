@@ -12,7 +12,8 @@ from trachoma.trachoma_functions import (
     getInterventionDates,
     get_Intervention_times,
 )
-from .trachoma_params import params, sim_params, demog
+from .trachoma_params import params as parameters
+from .trachoma_params import sim_params, demog
 
 __all__ = ["build_transmission_model"]
 
@@ -46,8 +47,8 @@ def setup_vaccine(cov_filepath, burnin):
 
 
 def setup(initial_prevalence: float):
-    vals = Set_inits(params, demog, sim_params, np.random.get_state())
-    ids = random.sample(range(params["N"]), k=int(initial_prevalence * params["N"]))
+    vals = Set_inits(parameters, demog, sim_params, np.random.get_state())
+    ids = random.sample(range(parameters["N"]), k=int(initial_prevalence * parameters["N"]))
     vals["IndI"][ids] = 1
     vals["T_latent"][ids] = vals["Ind_latent"][ids]
     vals["No_Inf"][ids] = 1
@@ -59,7 +60,7 @@ def setup(initial_prevalence: float):
 
     return (
         vals,
-        params,
+        parameters,
         sim_params,
         demog,
         MDA_times,
@@ -92,7 +93,7 @@ def build_transmission_model(
     """
     (
         init_vals,
-        params,
+        parameters,
         sim_params,
         demog,
         MDA_times,
@@ -101,12 +102,12 @@ def build_transmission_model(
         VaccData,
     ) = setup(initial_infect_frac)
 
-    def run_trachoma(seeds, betavals, n_sims):
+    def run_trachoma(seeds, params, n_tims):
         results: list[tuple[dict, list]]
         results = Parallel(n_jobs=num_cores)(
             delayed(run_single_simulation)(
                 pickleData=copy.deepcopy(init_vals),
-                params=params,
+                params=parameters,
                 timesim=sim_params["timesim"],
                 burnin=sim_params["burnin"],
                 demog=demog,
@@ -119,7 +120,7 @@ def build_transmission_model(
                 index=i,
                 numpy_state=np.random.get_state(),
             )
-            for i, beta in enumerate(betavals)
+            for i, beta in enumerate(params)
         )
         # Get the prevalence from the returned values dictionary
         # Could probably also compute it again here.
