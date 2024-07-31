@@ -13,5 +13,7 @@ jobs:
       with:
         r-version: 'renv'
     - uses: r-lib/actions/setup-renv@v2
+    - name: Install trachoma model and dependencies
+      run: pip install .
     - name: Run top-level script
       run: Rscript trachoma_fitting.R
