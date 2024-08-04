@@ -118,7 +118,6 @@ def build_transmission_model(
                 VaccData=VaccData,
                 outputTimes=[],
                 index=i,
-                numpy_state=np.random.get_state(),
             )
             for i, beta in enumerate(params)
         )

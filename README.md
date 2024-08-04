@@ -19,9 +19,9 @@ Start with creating a Python virtual environment to install the
 [NTDMC trachoma model](https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma) into:
 
 ```shell
-git clone https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma.git
 python3 -m venv trachoma-venv
 source trachoma-venv/bin/activate
+pip install git+https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma.git@v1.0.0
 cd ntd-model-trachoma/
 (trachoma-venv) pip install .
 ```
