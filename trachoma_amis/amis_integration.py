@@ -11,6 +11,7 @@ from trachoma.trachoma_functions import (
     readPlatformData,
     getInterventionDates,
     get_Intervention_times,
+    getOutputTimes,
 )
 from .trachoma_params import params as parameters
 from .trachoma_params import sim_params, demog
@@ -102,6 +103,12 @@ def build_transmission_model(
         VaccData,
     ) = setup(initial_infect_frac)
 
+    outputTimes = get_Intervention_times(
+        getOutputTimes(range(2019, 2041)),
+        START_DATE,
+        sim_params['burnin'],
+    )
+
     def run_trachoma(seeds, params, n_tims):
         results: list[tuple[dict, list]]
         results = Parallel(n_jobs=num_cores)(
@@ -116,7 +123,7 @@ def build_transmission_model(
                 MDAData=MDAData,
                 vacc_times=vacc_times,
                 VaccData=VaccData,
-                outputTimes=[],
+                outputTimes=outputTimes,
                 index=i,
             )
             for i, beta in enumerate(params)
