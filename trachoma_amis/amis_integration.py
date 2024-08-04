@@ -126,7 +126,7 @@ def build_transmission_model(
                 outputTimes=outputTimes,
                 index=i,
             )
-            for i, beta in enumerate(params)
+            for i, (seed, beta) in enumerate(params)
         )
         # Get the prevalence from the returned values dictionary
         # Could probably also compute it again here.
