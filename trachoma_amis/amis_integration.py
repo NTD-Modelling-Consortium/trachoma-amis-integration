@@ -70,6 +70,24 @@ def setup(initial_prevalence: float):
         VaccData,
     )
 
+def alterMDACoverage(MDAData, coverage):
+    """ update the coverage of each MDA for a run to be a given value.
+
+    Parameters
+    ----------
+    MDAData
+        A list of MDA's to be done with date and coverage of the MDA included
+    coverage    
+        The new coverage level for each MDA
+
+    Returns
+    -------
+    function
+        MDAData with updated coverage value
+    """
+    for MDA in MDAData:
+        MDA[3] = coverage
+    return MDAData
 
 def build_transmission_model(
         fitting_points: list[int],
@@ -120,13 +138,13 @@ def build_transmission_model(
                 demog=demog,
                 beta=beta,
                 MDA_times=MDA_times,
-                MDAData=MDAData,
+                MDAData=alterMDACoverage(MDAData, coverage),
                 vacc_times=vacc_times,
                 VaccData=VaccData,
                 outputTimes=outputTimes,
                 index=i,
             )
-            for i, (seed, beta) in enumerate(params)
+            for i, (seed, beta, coverage) in enumerate(params)
         )
         # Get the prevalence from the returned values dictionary
         # Could probably also compute it again here.
