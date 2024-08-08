@@ -77,7 +77,7 @@ def alterMDACoverage(MDAData, coverage):
     ----------
     MDAData
         A list of MDA's to be done with date and coverage of the MDA included. 
-        The coverage is given by the 4th value so we update the [3] position.
+        The coverage is given by the 4th value within each MDA of MDAData so we update the [3] position.
     coverage    
         The new coverage level for each MDA
 
