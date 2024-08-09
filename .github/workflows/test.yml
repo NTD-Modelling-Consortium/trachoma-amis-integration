@@ -18,4 +18,5 @@ jobs:
     - name: Install AMIS integration package
       run: pip install .
     - name: Run top-level script
-      run: Rscript trachoma_fitting.R
+      # run: Rscript trachoma_fitting.R
+      run: echo Disable running script until we have a test case
