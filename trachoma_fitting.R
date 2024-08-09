@@ -17,7 +17,7 @@ density_function <- function(parameters, log) {
 #' The "rprior" function that returns a matrix whose columns are the parameters
 #' and each row is a sample
 rnd_function <- function(num_samples) {
-    return(matrix(c(3, 0.04), ncol = 2, nrow = num_samples, byrow = TRUE))
+    return(matrix(0.04, ncol = 1, nrow = num_samples, byrow = TRUE))
 }
 
 prior <- list("dprior" = density_function, "rprior" = rnd_function)
