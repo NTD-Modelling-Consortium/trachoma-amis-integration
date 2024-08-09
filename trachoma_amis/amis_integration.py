@@ -130,11 +130,18 @@ def build_transmission_model(
             for i, (seed, beta) in enumerate(params)
         )
         # Get the prevalence from the returned values dictionary
-        # Could probably also compute it again here.
+        # This is an exemple of post-processing extracting prevalence among
+        # children aged 1 to 9 yo.  To be modified by the modelling team.
+
+        # 'results' is a list of 2-tuples (v, r) where
+        # - v is a dict containing various recorded data ('vals' in the trachoma model code)
+        # - r is a list of outputResults instances, see trachoma.trachoma_functions.py
         return np.transpose(
             [
-                t[0]['True_Prev_Disease_children_1_9'][fitting_points]
-                for t in results
+                # 'v' is a list, so convert it to NumPy array to index it from
+                # a list 'fitting_points'
+                np.asarray(v['True_Prev_Disease_children_1_9'])[fitting_points]
+                for (v, r) in results
             ]
         )
     return run_trachoma
