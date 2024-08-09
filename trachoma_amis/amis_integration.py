@@ -127,7 +127,7 @@ def build_transmission_model(
                 index=i,
                 numpy_state=np.random.get_state(),
             )
-            for i, (seed, beta) in enumerate(params)
+            for i, (seed, beta) in enumerate(zip(seeds, params))
         )
         # Get the prevalence from the returned values dictionary
         # This is an exemple of post-processing extracting prevalence among
