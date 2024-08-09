@@ -23,7 +23,7 @@ rnd_function <- function(num_samples) {
 prior <- list("dprior" = density_function, "rprior" = rnd_function)
 
 #' Fit to initial and last week (in this case 100 years)
-weeks_indices <- c(0L, 5200L)
+weeks_indices <- c(0L, 5199L)
 initial_infect = 0.01
 num_cores = 1L
 
