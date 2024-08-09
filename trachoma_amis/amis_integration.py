@@ -48,7 +48,7 @@ def setup_vaccine(cov_filepath, burnin):
 
 
 def setup(initial_prevalence: float):
-    vals = Set_inits(parameters, demog, sim_params)
+    vals = Set_inits(parameters, demog, sim_params, np.random.get_state())
     ids = random.sample(range(parameters["N"]), k=int(initial_prevalence * parameters["N"]))
     vals["IndI"][ids] = 1
     vals["T_latent"][ids] = vals["Ind_latent"][ids]
@@ -125,6 +125,7 @@ def build_transmission_model(
                 VaccData=VaccData,
                 outputTimes=outputTimes,
                 index=i,
+                numpy_state=np.random.get_state(),
             )
             for i, (seed, beta) in enumerate(params)
         )

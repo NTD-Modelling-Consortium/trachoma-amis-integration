@@ -21,7 +21,7 @@ Start with creating a Python virtual environment to install the
 ```shell
 python3 -m venv trachoma-venv
 source trachoma-venv/bin/activate
-pip install git+https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma.git@v1.0.0
+pip install git+https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma.git@master
 cd ntd-model-trachoma/
 (trachoma-venv) pip install .
 ```
