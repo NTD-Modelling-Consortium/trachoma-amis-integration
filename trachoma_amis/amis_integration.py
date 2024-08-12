@@ -48,7 +48,6 @@ def setup_vaccine(cov_filepath, burnin):
 
 
 def setup(initial_prevalence: float):
-
     vals = Set_inits(parameters, demog, sim_params, np.random.get_state())
     ids = random.sample(range(parameters["N"]), k=int(initial_prevalence * parameters["N"]))
     vals["IndI"][ids] = 1
@@ -60,7 +59,6 @@ def setup(initial_prevalence: float):
     sim_params["N_MDA"] = len(MDA_times)
     sim_params["N_Vaccines"] = len(vacc_times)
      
-
     return (
         vals,
         parameters,
