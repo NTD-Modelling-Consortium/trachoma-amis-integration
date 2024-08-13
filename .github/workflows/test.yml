@@ -17,6 +17,8 @@ jobs:
       run: pip install git+https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma.git@master
     - name: Install AMIS integration package
       run: pip install .
+    - name: Run Python tests
+      run: python -m pytest tests/
     - name: Run top-level script
       # run: Rscript trachoma_fitting.R
       run: echo Disable running script until we have a test case
