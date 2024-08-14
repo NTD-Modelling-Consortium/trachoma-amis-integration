@@ -58,7 +58,7 @@ def setup(initial_prevalence: float):
     vacc_times, VaccData = setup_vaccine("scen2c.csv", sim_params["burnin"])
     sim_params["N_MDA"] = len(MDA_times)
     sim_params["N_Vaccines"] = len(vacc_times)
-
+     
     return (
         vals,
         parameters,
@@ -70,6 +70,23 @@ def setup(initial_prevalence: float):
         VaccData,
     )
 
+def alterMDACoverage(MDAData, coverage):
+    """ update the coverage of each MDA for a run to be a given value.
+    Parameters
+    ----------
+    MDAData
+        A list of MDA's to be done with date and coverage of the MDA included. 
+        The coverage is given by the 4th value within each MDA of MDAData so we update the [3] position.
+    coverage    
+        The new coverage level for each MDA
+    Returns
+    -------
+    function
+        MDAData with updated coverage value
+    """
+    for MDA in MDAData:
+        MDA[3] = coverage
+    return MDAData
 
 def build_transmission_model(
         fitting_points: list[int],
@@ -118,16 +135,19 @@ def build_transmission_model(
                 timesim=sim_params["timesim"],
                 burnin=sim_params["burnin"],
                 demog=demog,
-                beta=beta,
+                beta=amisPars[0],
                 MDA_times=MDA_times,
-                MDAData=MDAData,
+                MDAData=alterMDACoverage(MDAData, amisPars[1]),
                 vacc_times=vacc_times,
                 VaccData=VaccData,
                 outputTimes=outputTimes,
                 index=i,
                 numpy_state=np.random.get_state(),
             )
-            for i, (seed, beta) in enumerate(zip(seeds, params))
+            # params now will have 2 columns, one for beta and one for coverage
+            # iterate over these, naming them amisPars, and amisPars[0] being beta
+            # amisPars[1] being the coverage value
+            for i, (seed, amisPars) in enumerate(zip(seeds, params))
         )
         # Get the prevalence from the returned values dictionary
         # This is an exemple of post-processing extracting prevalence among
