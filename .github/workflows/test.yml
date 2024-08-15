@@ -24,6 +24,5 @@ jobs:
       run: pip install .
     - name: Run Python tests
       run: python -m pytest tests/
-    - name: Run top-level script
-      # run: Rscript trachoma_fitting.R
-      run: echo Disable running script until we have a test case
+    - name: Run R tests
+      run: Rscript tests/testthat.R
