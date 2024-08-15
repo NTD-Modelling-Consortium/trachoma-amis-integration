@@ -15,6 +15,9 @@ jobs:
       with:
         r-version: 'renv'
     - uses: r-lib/actions/setup-renv@v2
+    - name: Install testthat
+      run: renv::install("testthat")
+      shell: Rscript {0}
     - name: Install trachoma model and dependencies
       run: pip install git+https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma.git@master
     - name: Install AMIS integration package
