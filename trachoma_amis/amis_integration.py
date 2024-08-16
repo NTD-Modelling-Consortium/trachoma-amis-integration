@@ -142,7 +142,7 @@ def build_transmission_model(
                 VaccData=VaccData,
                 outputTimes=outputTimes,
                 index=i,
-                numpy_state=np.random.get_state(),
+                seed=seed,
             )
             # params now will have 2 columns, one for beta and one for coverage
             # iterate over these, naming them amisPars, and amisPars[0] being beta
