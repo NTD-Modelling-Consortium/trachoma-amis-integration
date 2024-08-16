@@ -156,12 +156,10 @@ def build_transmission_model(
         # 'results' is a list of 2-tuples (v, r) where
         # - v is a dict containing various recorded data ('vals' in the trachoma model code)
         # - r is a list of outputResults instances, see trachoma.trachoma_functions.py
-        return np.transpose(
-            [
-                # 'v' is a list, so convert it to NumPy array to index it from
-                # a list 'fitting_points'
-                np.asarray(v['True_Prev_Disease_children_1_9'])[fitting_points]
-                for (v, r) in results
-            ]
-        )
+        return [
+            # 'v' is a list, so convert it to NumPy array to index it from
+            # a list 'fitting_points'
+            np.asarray(v["True_Prev_Disease_children_1_9"])[fitting_points]
+            for (v, r) in results
+        ]
     return run_trachoma

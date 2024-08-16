@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+  pull_request:
+  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,10 +15,14 @@ jobs:
       with:
         r-version: 'renv'
     - uses: r-lib/actions/setup-renv@v2
+    - name: Install testthat
+      run: renv::install("testthat")
+      shell: Rscript {0}
     - name: Install trachoma model and dependencies
       run: pip install git+https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma.git@master
     - name: Install AMIS integration package
       run: pip install .
-    - name: Run top-level script
-      # run: Rscript trachoma_fitting.R
-      run: echo Disable running script until we have a test case
+    - name: Run Python tests
+      run: python -m pytest tests/
+    - name: Run R tests
+      run: Rscript tests/testthat.R
