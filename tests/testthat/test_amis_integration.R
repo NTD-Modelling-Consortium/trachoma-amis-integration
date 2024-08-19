@@ -61,7 +61,7 @@ test_that("Can run the simulation", {
     amis_params <- AMISforInfectiousDiseases::default_amis_params()
     amis_params$n_samples <- 2
 
-    amis_output <- AMISforInfectiousDiseases::amis(
+     expect_error(amis_output <- AMISforInfectiousDiseases::amis(
         prevalence_map,
         # Wrap model_func so as to print the Python traceback
         # in case of a raised exception during execution of the
@@ -77,5 +77,5 @@ test_that("Can run the simulation", {
         },
         prior,
         amis_params
-    )
+    ), "No weight on any particles for locations in the active set. Try to use larger delta.")
 })
