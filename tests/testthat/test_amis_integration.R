@@ -21,7 +21,16 @@ test_that("Can run the simulation", {
     #' The "rprior" function that returns a matrix whose columns are the parameters
     #' and each row is a sample
     rnd_function <- function(num_samples) {
-        return(matrix(0.04, ncol = 1, nrow = num_samples, byrow = TRUE))
+        # set beta to just be 0.04 for each sample
+        beta <- rep(0.04, num_samples)
+
+        # set coverage to be randomly generated numbers between 0 and 1
+        coverage <- runif(num_samples, min = 0, max = 1)
+
+        # Combine the two columns to form the params matrix
+        result <- cbind(beta, coverage)
+
+        return(result)
     }
 
     prior <- list("dprior" = density_function, "rprior" = rnd_function)
