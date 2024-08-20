@@ -52,16 +52,7 @@ def setup(initial_prevalence: float):
     sim_params["N_MDA"] = len(MDA_times)
     sim_params["N_Vaccines"] = len(vacc_times)
 
-    vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state())
-    ids = np.random.choice(
-        range(parameters["N"]), int(initial_prevalence * parameters["N"]), replace=False
-    )
-    vals["IndI"][ids] = 1
-    vals["T_latent"][ids] = vals["Ind_latent"][ids]
-    vals["No_Inf"][ids] = 1
-
     return (
-        vals,
         parameters,
         sim_params,
         demog,
@@ -70,6 +61,18 @@ def setup(initial_prevalence: float):
         vacc_times,
         VaccData,
     )
+
+
+def create_initial_population(initial_prevalence: float, MDAData):
+    vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state())
+    ids = np.random.choice(
+        range(parameters["N"]), int(initial_prevalence * parameters["N"]), replace=False
+    )
+    vals["IndI"][ids] = 1
+    vals["T_latent"][ids] = vals["Ind_latent"][ids]
+    vals["No_Inf"][ids] = 1
+    return vals
+
 
 def alterMDACoverage(MDAData, coverage):
     """ update the coverage of each MDA for a run to be a given value.
@@ -111,7 +114,6 @@ def build_transmission_model(
         A function of three arguments (seeds, betavals, n_sims).
     """
     (
-        init_vals,
         parameters,
         sim_params,
         demog,
@@ -129,6 +131,7 @@ def build_transmission_model(
 
     def do_single_run(seed, beta, coverage, i):
         np.random.seed(seed)
+        init_vals = create_initial_population(initial_infect_frac, MDAData)
         random_state = np.random.get_state()
         return run_single_simulation(
             pickleData=copy.deepcopy(init_vals),
