@@ -46,7 +46,6 @@ def setup_vaccine(cov_filepath, burnin):
     vacc_times = get_Intervention_times(Vaccine_dates, START_DATE, burnin)
     return vacc_times, VaccData
 
-
 def setup(initial_prevalence: float):
     MDA_times, MDAData = setup_mda("scen2c.csv", sim_params["burnin"])
     vacc_times, VaccData = setup_vaccine("scen2c.csv", sim_params["burnin"])
@@ -169,4 +168,5 @@ def build_transmission_model(
                 ]
             )
         )
+
     return run_trachoma
