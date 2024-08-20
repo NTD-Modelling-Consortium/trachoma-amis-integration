@@ -53,7 +53,9 @@ def setup(initial_prevalence: float):
     sim_params["N_Vaccines"] = len(vacc_times)
 
     vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state())
-    ids = random.sample(range(parameters["N"]), k=int(initial_prevalence * parameters["N"]))
+    ids = np.random.choice(
+        range(parameters["N"]), int(initial_prevalence * parameters["N"]), replace=False
+    )
     vals["IndI"][ids] = 1
     vals["T_latent"][ids] = vals["Ind_latent"][ids]
     vals["No_Inf"][ids] = 1
