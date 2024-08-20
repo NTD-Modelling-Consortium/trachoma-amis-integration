@@ -125,24 +125,29 @@ def build_transmission_model(
         sim_params['burnin'],
     )
 
+    def do_single_run(seed, beta, coverage, i):
+        np.random.seed(seed)
+        random_state = np.random.get_state()
+        return run_single_simulation(
+            pickleData=copy.deepcopy(init_vals),
+            params=parameters,
+            timesim=sim_params["timesim"],
+            burnin=sim_params["burnin"],
+            demog=demog,
+            beta=beta,
+            MDA_times=MDA_times,
+            MDAData=alterMDACoverage(MDAData, coverage),
+            vacc_times=vacc_times,
+            VaccData=VaccData,
+            outputTimes=outputTimes,
+            index=i,
+            numpy_state=random_state,
+        )
+
     def run_trachoma(seeds, params, n_tims):
         results: list[tuple[dict, list]]
         results = Parallel(n_jobs=num_cores)(
-            delayed(run_single_simulation)(
-                pickleData=copy.deepcopy(init_vals),
-                params=parameters,
-                timesim=sim_params["timesim"],
-                burnin=sim_params["burnin"],
-                demog=demog,
-                beta=amisPars[0],
-                MDA_times=MDA_times,
-                MDAData=alterMDACoverage(MDAData, amisPars[1]),
-                vacc_times=vacc_times,
-                VaccData=VaccData,
-                outputTimes=outputTimes,
-                index=i,
-                numpy_state=np.random.get_state(),
-            )
+            delayed(do_single_run)(seed, beta=amisPars[0], coverage=amisPars[1], i=i)
             # params now will have 2 columns, one for beta and one for coverage
             # iterate over these, naming them amisPars, and amisPars[0] being beta
             # amisPars[1] being the coverage value
