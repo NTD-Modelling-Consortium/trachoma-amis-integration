@@ -77,5 +77,5 @@ test_that("Can run the simulation", {
         },
         prior,
         amis_params
-    ), "No weight on any particles for locations in the active set. Try to use larger delta.")
+    ), "No weight on any particles for locations in the active set.( Try to use larger delta.)?")
 })
