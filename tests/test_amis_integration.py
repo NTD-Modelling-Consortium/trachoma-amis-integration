@@ -9,9 +9,7 @@ def test_build_transmission_model():
         fitting_points=[0, 1], initial_infect_frac=0.5, num_cores=1
     )
     result = transmission_model([1], [(0.2, 0.4)], 0)
-    # At the moment the seed is ignored so just check
-    # the shape of what is returned
-    assert np.shape(result) == (1, 2)
+    npt.assert_array_equal(result, [[0, 0.40625]])
 
 
 def test_running_twice_with_different_seed_produces_different_result_at_first_week():
@@ -19,7 +17,9 @@ def test_running_twice_with_different_seed_produces_different_result_at_first_we
         fitting_points=[1], initial_infect_frac=0.5, num_cores=1
     )
     result = transmission_model(seeds=[1, 2], params=[(0.2, 0.4), (0.2, 0.4)], n_tims=0)
-    assert result[0][0] != result[1][0]
+
+    assert result[0][0] == 0.40625
+    assert result[1][0] == 0.4722222222222222
 
 
 def test_running_twice_with_different_seed_produces_different_result_after_10_weeks():
@@ -27,15 +27,17 @@ def test_running_twice_with_different_seed_produces_different_result_after_10_we
         fitting_points=[10], initial_infect_frac=0.5, num_cores=2
     )
     result = transmission_model(seeds=[1, 2], params=[(0.2, 0.4), (0.2, 0.4)], n_tims=0)
-    assert result[0][0] != result[1][0]
+    assert result[0][0] == 0.78125
+    assert result[1][0] == 0.8
 
 
-def test_running_twice_with_different_seed_produces_different_result_after_100_weeks_single_core():
+def test_running_twice_with_different_seed_produces_different_result_after_10_weeks_single_core():
     transmission_model = amis_integration.build_transmission_model(
-        fitting_points=[100], initial_infect_frac=0.5, num_cores=1
+        fitting_points=[10], initial_infect_frac=0.5, num_cores=1
     )
     result = transmission_model(seeds=[1, 2], params=[(0.2, 0.4), (0.2, 0.4)], n_tims=0)
-    assert result[0][0] != result[1][0]
+    assert result[0][0] == 0.78125
+    assert result[1][0] == 0.8
 
 
 def test_running_twice_with_same_seed_produces_same_result_after_10_weeks():
