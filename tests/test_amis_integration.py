@@ -11,6 +11,7 @@ def test_build_transmission_model():
     )
     result = transmission_model([1], [(0.2, 0.4)], 0)
     npt.assert_array_equal(result, [[0, 0.40625]])
+    assert isinstance(result, np.ndarray)
 
 
 def test_running_twice_with_different_seed_produces_different_result_at_first_week():
