@@ -1,5 +1,6 @@
+import copy
 import pytest
-from trachoma_amis import amis_integration
+from trachoma_amis import amis_integration, trachoma_params
 import numpy as np
 import numpy.testing as npt
 
@@ -46,3 +47,27 @@ def test_running_twice_with_same_seed_produces_same_result_after_10_weeks():
     )
     result = transmission_model(seeds=[1, 1], params=[(0.2, 0.4), (0.2, 0.4)], n_tims=0)
     assert result[0][0] == result[1][0]
+
+
+def test_running_with_modified_coverage_eliminates_disease_if_high():
+    # This needs to be long enough after the first treatment that
+    # all the diseased individuals have recovered
+    # Currently also note the first two treatments do not happen
+    # as the initial survey disables the treatment into week ~150
+    first_week_after_treatment = 500
+    transmission_model = amis_integration.build_transmission_model(
+        fitting_points=[first_week_after_treatment], initial_infect_frac=1, num_cores=1
+    )
+
+    old_params = copy.deepcopy(trachoma_params.params)
+
+    trachoma_params.params["MDA_Eff"] = 1.0
+    result = transmission_model(
+        seeds=[1, 1], params=[(0.4, 0.9999), (0.4, 0)], n_tims=0
+    )
+    assert result[0][0] == 0.0
+    assert result[1][0] == 0.9310344827586207
+
+    # Currently the params are a mutable global so modifying them could effect other tests
+    # so make sure to restore them
+    trachoma_params.params = old_params
