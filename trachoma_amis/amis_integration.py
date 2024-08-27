@@ -47,20 +47,13 @@ def setup_vaccine(cov_filepath, burnin):
     return vacc_times, VaccData
 
 
-def setup(initial_prevalence: float):
+def setup():
     MDA_times, MDAData = setup_mda("scen2c.csv", sim_params["burnin"])
     vacc_times, VaccData = setup_vaccine("scen2c.csv", sim_params["burnin"])
     sim_params["N_MDA"] = len(MDA_times)
     sim_params["N_Vaccines"] = len(vacc_times)
 
-    vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state())
-    ids = random.sample(range(parameters["N"]), k=int(initial_prevalence * parameters["N"]))
-    vals["IndI"][ids] = 1
-    vals["T_latent"][ids] = vals["Ind_latent"][ids]
-    vals["No_Inf"][ids] = 1
-
     return (
-        vals,
         parameters,
         sim_params,
         demog,
@@ -69,6 +62,18 @@ def setup(initial_prevalence: float):
         vacc_times,
         VaccData,
     )
+
+
+def create_initial_population(initial_prevalence: float, MDAData):
+    vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state())
+    ids = np.random.choice(
+        range(parameters["N"]), int(initial_prevalence * parameters["N"]), replace=False
+    )
+    vals["IndI"][ids] = 1
+    vals["T_latent"][ids] = vals["Ind_latent"][ids]
+    vals["No_Inf"][ids] = 1
+    return vals
+
 
 def alterMDACoverage(MDAData, coverage):
     """ update the coverage of each MDA for a run to be a given value.
@@ -110,7 +115,6 @@ def build_transmission_model(
         A function of three arguments (seeds, betavals, n_sims).
     """
     (
-        init_vals,
         parameters,
         sim_params,
         demog,
@@ -118,7 +122,7 @@ def build_transmission_model(
         MDAData,
         vacc_times,
         VaccData,
-    ) = setup(initial_infect_frac)
+    ) = setup()
 
     outputTimes = get_Intervention_times(
         getOutputTimes(range(2019, 2041)),
@@ -126,24 +130,30 @@ def build_transmission_model(
         sim_params['burnin'],
     )
 
+    def do_single_run(seed, beta, coverage, i):
+        np.random.seed(seed)
+        init_vals = create_initial_population(initial_infect_frac, MDAData)
+        random_state = np.random.get_state()
+        return run_single_simulation(
+            pickleData=copy.deepcopy(init_vals),
+            params=parameters,
+            timesim=sim_params["timesim"],
+            burnin=sim_params["burnin"],
+            demog=demog,
+            beta=beta,
+            MDA_times=MDA_times,
+            MDAData=alterMDACoverage(MDAData, coverage),
+            vacc_times=vacc_times,
+            VaccData=VaccData,
+            outputTimes=outputTimes,
+            index=i,
+            numpy_state=random_state,
+        )
+
     def run_trachoma(seeds, params, n_tims):
         results: list[tuple[dict, list]]
         results = Parallel(n_jobs=num_cores)(
-            delayed(run_single_simulation)(
-                pickleData=copy.deepcopy(init_vals),
-                params=parameters,
-                timesim=sim_params["timesim"],
-                burnin=sim_params["burnin"],
-                demog=demog,
-                beta=amisPars[0],
-                MDA_times=MDA_times,
-                MDAData=alterMDACoverage(MDAData, amisPars[1]),
-                vacc_times=vacc_times,
-                VaccData=VaccData,
-                outputTimes=outputTimes,
-                index=i,
-                numpy_state=np.random.get_state(),
-            )
+            delayed(do_single_run)(seed, beta=amisPars[0], coverage=amisPars[1], i=i)
             # params now will have 2 columns, one for beta and one for coverage
             # iterate over these, naming them amisPars, and amisPars[0] being beta
             # amisPars[1] being the coverage value
@@ -169,4 +179,5 @@ def build_transmission_model(
                 ]
             )
         )
+
     return run_trachoma
