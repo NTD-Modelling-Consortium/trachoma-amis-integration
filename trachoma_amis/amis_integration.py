@@ -148,6 +148,8 @@ def build_transmission_model(
             outputTimes=outputTimes,
             index=i,
             numpy_state=random_state,
+            doIHMEOutput=False,
+            doSurvey=False,
         )
 
     def run_trachoma(seeds, params, n_tims):
