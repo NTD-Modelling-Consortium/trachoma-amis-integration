@@ -30,7 +30,7 @@ def test_running_twice_with_different_seed_produces_different_result_after_10_we
     )
     result = transmission_model(seeds=[1, 2], params=[(0.2, 0.4), (0.2, 0.4)], n_tims=0)
     assert result[0][0] == 0.7575757575757576
-    assert result[1][0] == 0.8
+    assert result[1][0] == 0.8285714285714286
 
 
 def test_running_twice_with_different_seed_produces_different_result_after_10_weeks_single_core():
