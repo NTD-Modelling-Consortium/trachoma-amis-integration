@@ -23,7 +23,6 @@ classifiers = [
 
 requires-python = ">= 3.9"
 
-# For later when model is on PyPI
 dependencies = [
   "trachoma@git+https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma",
   "numpy"
