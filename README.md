@@ -36,9 +36,12 @@ cd trachoma-amis-integration/
 
 Finally, install R dependencies:
 
-1. Launch a R session `R`
-2. Create a R virtual environment `renv::init()`
-3. Install dependencies `renv::restore()`
+
+1. Ensure the dependencies are locked for the version of R you are
+  using, by running the `setup_r_env.R` script: `Rscript setup_r_env.R`.
+2. Launch a R session `R`
+3. Create a R virtual environment with `renv::init()`
+4. Install dependencies with `renv::restore()`
 
 ## Running
 
