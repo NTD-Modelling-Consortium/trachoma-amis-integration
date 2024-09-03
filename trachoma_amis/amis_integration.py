@@ -132,7 +132,8 @@ def build_transmission_model(
 
     def do_single_run(seed, beta, coverage, i):
         np.random.seed(seed)
-        init_vals = create_initial_population(initial_infect_frac, MDAData)
+        altered_mda_coverage = alterMDACoverage(MDAData, coverage)
+        init_vals = create_initial_population(initial_infect_frac, altered_mda_coverage)
         random_state = np.random.get_state()
         return run_single_simulation(
             pickleData=copy.deepcopy(init_vals),
@@ -142,7 +143,7 @@ def build_transmission_model(
             demog=demog,
             beta=beta,
             MDA_times=MDA_times,
-            MDAData=alterMDACoverage(MDAData, coverage),
+            MDAData=altered_mda_coverage,
             vacc_times=vacc_times,
             VaccData=VaccData,
             outputTimes=outputTimes,
