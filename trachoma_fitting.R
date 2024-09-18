@@ -37,8 +37,23 @@ weeks_indices <- c(0L, 5199L)
 initial_infect = 0.01
 num_cores = 1L
 
+args = commandArgs(trailingOnly=TRUE)
+# test if there is at least one argument: if not, return an error
+if (length(args)==0) {
+  stop("At least two arguments must be supplied", call.=FALSE)
+} else if (length(args)==2) {
+  # No data location provided
+  args[3] <- NULL
+}
+
+mda_coverage_data_filename <- args[1]
+vaccine_coverage_data_filename <- args[2]
+coverage_data_path <- args[3]
 model_func <- amis_int_mod$build_transmission_model(
-    weeks_indices, initial_infect, num_cores
+    weeks_indices, initial_infect, num_cores,
+    mda_coverage_data_filename,
+    vaccine_coverage_data_filename,
+    coverage_data_path
 )
 
 error_function <- function(e) {
