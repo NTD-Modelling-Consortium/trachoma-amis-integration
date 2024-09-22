@@ -103,10 +103,10 @@ def alterMDACoverage(MDAData, coverage):
 
 def build_transmission_model(
         fitting_points: list[int],
-        initial_infect_frac=0.01,
-        num_cores=-2,
         mda_coverage_filename,
         vaccine_coverage_filename,
+        initial_infect_frac=0.01,
+        num_cores=-2,
         coverage_data_path=None,
 ):
     """Create a closure for the AMIS to run the trachoma model.

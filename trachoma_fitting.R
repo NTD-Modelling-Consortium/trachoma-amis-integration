@@ -50,10 +50,10 @@ mda_coverage_data_filename <- args[1]
 vaccine_coverage_data_filename <- args[2]
 coverage_data_path <- args[3]
 model_func <- amis_int_mod$build_transmission_model(
-    weeks_indices, initial_infect, num_cores,
-    mda_coverage_data_filename,
-    vaccine_coverage_data_filename,
-    coverage_data_path
+    weeks_indices, mda_coverage_data_filename, vaccine_coverage_data_filename,
+    coverage_data_path,
+    initial_infect, num_cores,
+    coverage_data_path,
 )
 
 error_function <- function(e) {
