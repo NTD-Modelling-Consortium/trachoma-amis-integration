@@ -15,7 +15,7 @@ jobs:
       with:
         r-version: 4.2.2
     - name: Setup renv lock file
-      run: Rscript --vanilla setup_r_env.R
+      run: cp renv_4_2_2.lock renv.lock
     - uses: r-lib/actions/setup-renv@v2
     - name: Install testthat
       run: renv::install("testthat")
