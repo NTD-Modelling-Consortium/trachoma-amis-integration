@@ -41,8 +41,15 @@ test_that("Can run the simulation", {
     num_cores <- 1L
 
 
+    mda_coverage_data_filename <- "scen2c.csv"
+    vaccine_coverage_data_filename <- "scen2c.csv"
+    coverage_data_path <- NULL
     model_func <- amis_int_mod$build_transmission_model(
-        weeks_indices, initial_infect, num_cores
+        weeks_indices,
+	mda_coverage_data_filename,
+	vaccine_coverage_data_filename,
+	initial_infect, num_cores,
+	coverage_data_path
     )
 
     error_function <- function(e) {

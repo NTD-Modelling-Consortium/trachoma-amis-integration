@@ -37,8 +37,42 @@ weeks_indices <- c(0L, 5199L)
 initial_infect = 0.01
 num_cores = 1L
 
+args = commandArgs(trailingOnly=TRUE)
+# test if there is at least one argument: if not, return an error
+if (length(args) < 2) {
+  msg <- "At least two arguments must be supplied
+Usage: Rscript trachoma_fitting.R -mda=<mda-filename> -vacc=<vacc-filename> [-datapath=<datapath>]"
+  stop(msg, call.=FALSE)
+} else if (length(args)==2) {
+  warning("No data location provided")
+  coverage_data_path <- NULL
+} else {
+  coverage_data_path <- args[3]
+  print(sprintf("Setting coverage data path to %s", coverage_data_path))
+}
+
+mda_coverage_data_filename <- args[1]
+vaccine_coverage_data_filename <- args[2]
+
+print(sprintf("Setting MDA data filename to %s", mda_coverage_data_filename))
+print(sprintf("Setting vaccine data filename to %s", vaccine_coverage_data_filename))
+
+if (length(args) > 3) {
+  acc <- ""
+  for (extra_arg in tail(args, -3)) {
+    acc <- paste(acc, extra_arg)
+  }
+  msg <- "The following arguments have been ignored: %s"
+  warning(sprintf(msg, acc))
+}
+
+
+
 model_func <- amis_int_mod$build_transmission_model(
-    weeks_indices, initial_infect, num_cores
+    weeks_indices, mda_coverage_data_filename,
+    vaccine_coverage_data_filename,
+    initial_infect, num_cores,
+    coverage_data_path
 )
 
 error_function <- function(e) {

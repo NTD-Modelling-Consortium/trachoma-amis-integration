@@ -33,23 +33,31 @@ def set_start_date(datestr: str):
         raise ValueError(msg)
 
 
-def setup_mda(cov_filepath, burnin):
-    MDAData = readPlatformData(cov_filepath, "MDA")
+def setup_mda(cov_filepath, burnin, data_path):
+    MDAData = readPlatformData(cov_filepath, "MDA", data_path)
     MDA_dates = getInterventionDates(MDAData)
     MDA_times = get_Intervention_times(MDA_dates, START_DATE, burnin)
     return MDA_times, MDAData
 
 
-def setup_vaccine(cov_filepath, burnin):
-    VaccData = readPlatformData(cov_filepath, "Vaccine")
+def setup_vaccine(cov_filepath, burnin, data_path):
+    VaccData = readPlatformData(cov_filepath, "Vaccine", data_path)
     Vaccine_dates = getInterventionDates(VaccData)
     vacc_times = get_Intervention_times(Vaccine_dates, START_DATE, burnin)
     return vacc_times, VaccData
 
 
-def setup():
-    MDA_times, MDAData = setup_mda("scen2c.csv", sim_params["burnin"])
-    vacc_times, VaccData = setup_vaccine("scen2c.csv", sim_params["burnin"])
+def setup(mda_coverage_filename, vaccine_coverage_filename, data_path):
+    MDA_times, MDAData = setup_mda(
+        mda_coverage_filename,
+        sim_params["burnin"],
+        data_path,
+    )
+    vacc_times, VaccData = setup_vaccine(
+        vaccine_coverage_filename,
+        sim_params["burnin"],
+        data_path,
+    )
     sim_params["N_MDA"] = len(MDA_times)
     sim_params["N_Vaccines"] = len(vacc_times)
 
@@ -80,9 +88,9 @@ def alterMDACoverage(MDAData, coverage):
     Parameters
     ----------
     MDAData
-        A list of MDA's to be done with date and coverage of the MDA included. 
+        A list of MDA's to be done with date and coverage of the MDA included.
         The coverage is given by the 4th value within each MDA of MDAData so we update the [3] position.
-    coverage    
+    coverage
         The new coverage level for each MDA
     Returns
     -------
@@ -95,8 +103,11 @@ def alterMDACoverage(MDAData, coverage):
 
 def build_transmission_model(
         fitting_points: list[int],
+        mda_coverage_filename,
+        vaccine_coverage_filename,
         initial_infect_frac=0.01,
-        num_cores=-2
+        num_cores=-2,
+        coverage_data_path=None,
 ):
     """Create a closure for the AMIS to run the trachoma model.
 
@@ -122,7 +133,11 @@ def build_transmission_model(
         MDAData,
         vacc_times,
         VaccData,
-    ) = setup()
+    ) = setup(
+        mda_coverage_filename,
+        vaccine_coverage_filename,
+        coverage_data_path,
+    )
 
     outputTimes = get_Intervention_times(
         getOutputTimes(range(2019, 2041)),
