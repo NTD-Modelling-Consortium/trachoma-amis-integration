@@ -18,8 +18,12 @@ from .trachoma_params import sim_params, demog
 
 __all__ = ["build_transmission_model"]
 
-START_DATE = date(2019, 1, 1)
+START_DATE = date(1996, 1, 1)
 
+#id = os.getenv("SLURM_ARRAY_TASK_ID")
+# for testing
+id = 556
+mda_filepath = 'endgame_inputs/InputMDA_MTP_' + str(id) + '.csv'
 
 def set_start_date(datestr: str):
     global START_DATE
@@ -48,8 +52,8 @@ def setup_vaccine(cov_filepath, burnin):
 
 
 def setup():
-    MDA_times, MDAData = setup_mda("scen2c.csv", sim_params["burnin"])
-    vacc_times, VaccData = setup_vaccine("scen2c.csv", sim_params["burnin"])
+    MDA_times, MDAData = setup_mda(mda_filepath, sim_params["burnin"])
+    vacc_times, VaccData = setup_vaccine(mda_filepath, sim_params["burnin"])
     sim_params["N_MDA"] = len(MDA_times)
     sim_params["N_Vaccines"] = len(vacc_times)
 
@@ -125,7 +129,7 @@ def build_transmission_model(
     ) = setup()
 
     outputTimes = get_Intervention_times(
-        getOutputTimes(range(2019, 2041)),
+        getOutputTimes(range(1996,2022)),
         START_DATE,
         sim_params['burnin'],
     )
