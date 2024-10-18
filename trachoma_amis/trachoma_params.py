@@ -1,10 +1,11 @@
-params = {'N': 100,
+params = {'N': 2500,
           'av_I_duration' : 2,
-          'av_ID_duration':200/7,
+          'av_ID_duration':300/7,
           'inf_red':0.45,
           'min_ID':11, #Parameters relating to duration of infection period, including ID period
-          'av_D_duration':300/7,
-          'min_D':1, #Parameters relating to duration of disease period
+          'av_D_duration':200/7,
+          'min_D':10.1/7, #Parameters relating to duration of disease period
+          'dis_red':0.3,
           'v_1':1,
           'v_2':2.6,
           'phi':1.4,
@@ -23,15 +24,17 @@ params = {'N': 100,
           'TestSensitivity': 0.96,
           'TestSpecificity': 0.965,
           'SecularTrendIndicator': 0,
-          'SecularTrendYearlyBetaDecrease': 0.05,
-          'vacc_prob_block_transmission':  0.8, 
-          'vacc_reduce_bacterial_load': 0.5, 
-          'vacc_reduce_duration': 0.5,  
-          'vacc_waning_length': 52 * 5}
+          'SecularTrendYearlyBetaDecrease': 0.01,
+          'vacc_prob_block_transmission':  0.5, 
+          'vacc_reduce_bacterial_load': 0, 
+          'vacc_reduce_duration': 0,
+          'vacc_coverage': 0,  
+          'vacc_waning_length': 52 * 5,
+          'importation_rate': 0.000008,
+          'importation_reduction_rate': (0.9)**(1/10)}
 
-
-sim_params = {'timesim':52*100,
-              'burnin': 26,
+sim_params = {'timesim':(52*96)+1,
+              'burnin': (52*70)-1,
               'N_MDA': 0} # Set by main script later
 
 
