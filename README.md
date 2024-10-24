@@ -15,30 +15,30 @@ simulation from the AMIS loop to compute fitted parameters.
 
 ## Installation
 
-Start with creating a Python virtual environment to install the
-[NTDMC trachoma model](https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma) into:
+Start with creating a Python virtual environment and activating it:
 
 ```shell
 python3 -m venv trachoma-venv
 source trachoma-venv/bin/activate
-pip install git+https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma.git@master
-cd ntd-model-trachoma/
-(trachoma-venv) pip install .
 ```
-In the same virtual environment, install the present AMIS integration
-package:
+
+With the virtual environment activated, install the present AMIS
+integration package:
 
 ```shell
 git clone https://github.com/NTD-Modelling-Consortium/trachoma-amis-integration.git
 cd trachoma-amis-integration/
-(trachoma-venv) pip install .
+pip install .
 ```
 
 Finally, install R dependencies:
 
-1. Launch a R session `R`
-2. Create a R virtual environment `renv::init()`
-3. Install dependencies `renv::restore()`
+
+1. Ensure the dependencies are locked for the version of R you are
+  using, by running the `setup_r_env.R` script: `Rscript setup_r_env.R`.
+2. Launch a R session `R`
+3. Create a R virtual environment with `renv::init()`
+4. Install dependencies with `renv::restore()`
 
 ## Running
 
