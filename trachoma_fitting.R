@@ -2,7 +2,8 @@
 # on cluster:
 #id = as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 # for testing:
-id = 556
+#id = 556
+id = 412
 library(dplyr)
 library(reticulate)
 
@@ -56,16 +57,16 @@ dprior = function(x, log){
       d = sum(dexp(x[1],rate=beta_rate,log=T),
               dbeta(x[2],a_eff_cov,b_eff_cov,log=T))
     } else {
-      d = prod(dunif(x[1],rate=beta_rate,log=F),
+      d = prod(dexp(x[1],rate=beta_rate,log=F),
                dbeta(x[2],a_eff_cov,b_eff_cov,log=F))
     }
     
   } else {
     if (log){
-      d = sum(dunif(x[,1],rate=beta_rate,log=T),
+      d = sum(dexp(x[,1],rate=beta_rate,log=T),
               dbeta(x[,2],a_eff_cov,b_eff_cov,log=T))
     } else {
-      d = prod(dunif(x[,1],rate=beta_rate,log=F),
+      d = prod(dexp(x[,1],rate=beta_rate,log=F),
                dbeta(x[,2],a_eff_cov,b_eff_cov,log=F))
     }
   }
@@ -89,10 +90,18 @@ trajectories = c() # save simulated trajectories as code is running
 if (!dir.exists("../trajectories")) {dir.create("../trajectories")}
 save(trajectories,file=paste0("../trajectories/trajectories_",id,".Rdata"))
 
-# Fit to years_vector years (70 years burn in, currently I think maps are at the start of the year/end of previous year since index starts at 0)
-all_years_vector_id = seq(min(years_vector_id),(max(years_vector_id)+1),by=0.25)
-weeks_indices <- as.integer(70*52 + (all_years_vector_id - min(years_vector))*52)
-initial_infect = 0.5
+# save infection
+infections = c() # save simulated infections as code is running
+if (!dir.exists("../infections")) {dir.create("../infections")}
+save(infections,file=paste0("../infections/infections",id,".Rdata"))
+
+# Fit to years_vector years
+# Index starts at 0
+# (70 years burn in, currently I think maps are at the end of the year)
+#all_years_vector_id = seq(min(years_vector_id),(max(years_vector_id)+1),by=0.25) 
+all_years_vector_id = seq(1996,2022,by=0.25) 
+weeks_indices <- as.integer(70*52-1 + (all_years_vector_id - min(years_vector))*52) 
+initial_infect = 0.1
 num_cores = 8L
 
 model_func <- amis_int_mod$build_transmission_model(
@@ -119,17 +128,76 @@ transmission_model = function(seeds, params, n_tims) {
       
       #save simulated trajectories 
       load(paste0("../trajectories/trajectories_",id,".Rdata"))
-      trajectories =  rbind(trajectories,output)
+      trajectories =  rbind(trajectories,output[[1]])
+      #trajectories =  rbind(trajectories,output)
       save(trajectories, file=paste0("../trajectories/trajectories_",id,".Rdata"))
+
+
+      #save simulated infections
+      load(paste0("../infections/infections",id,".Rdata"))
+      infections =  rbind(infections,output[[2]])
+      save(infections, file=paste0("../infections/infections",id,".Rdata"))
       
-      output_map_years = output[,which(all_years_vector_id %in% (years_vector_id+0.75))]
+      output_map_years = output[[1]][,which(all_years_vector_id %in% (years_vector_id+0.75))]
+      #output_map_years = output[,which(all_years_vector_id %in% (years_vector_id+0.75))]
+    
       return(output_map_years)
       
   #   },
   #   error=error_function
   # )
 }
-#test=transmission_model(1:10,rprior(10),21)
+
+# # test model
+# # shell to save trajectories
+# trajectories = c() # save simulated trajectories as code is running
+# if (!dir.exists("../test-trajectories")) {dir.create("../test-trajectories")}
+# save(trajectories,file=paste0("../test-trajectories/trajectories_",id,".Rdata"))
+# # save infection
+# infections = c() # save simulated infections as code is running
+# if (!dir.exists("../test-infections")) {dir.create("../test-infections")}
+# save(infections,file=paste0("../test-infections/infections",id,".Rdata"))
+# transmission_model = function(seeds, params, n_tims) {
+#   # tryCatch(
+#   #   expr={
+#   output=model_func(seeds, params, n_tims)
+#   
+#   #save simulated trajectories 
+#   load(paste0("../test-trajectories/trajectories_",id,".Rdata"))
+#   trajectories =  rbind(trajectories,output[[1]])
+#   #trajectories =  rbind(trajectories,output)
+#   save(trajectories, file=paste0("../test-trajectories/trajectories_",id,".Rdata"))
+#   
+#   
+#   #save simulated infections
+#   load(paste0("../test-infections/infections",id,".Rdata"))
+#   infections =  rbind(infections,output[[2]])
+#   save(infections, file=paste0("../test-infections/infections",id,".Rdata"))
+#   
+#   output_map_years = output[[1]][,which(all_years_vector_id %in% (years_vector_id+0.75))]
+#   #output_map_years = output[,which(all_years_vector_id %in% (years_vector_id+0.75))]
+#   
+#   return(output_map_years)
+#   
+#   #   },
+#   #   error=error_function
+#   # )
+# }
+# sampled_params_test = read.csv("../sampled_params_50886.csv") 
+# params = as.matrix(sampled_params_test %>%
+#   select(seed,beta,eff_cov))
+# params[,2] = params[,2]
+# params[,3] = 0.85
+# test=transmission_model(as.integer(params[,1]),params[,2:3],45)
+# par(mfrow=c(2,1))
+# load(paste0("../test-infections/infections",id,".Rdata"))
+# plot(x=all_years_vector_id,y=infections[1,],type="l",ylim=c(0,0.6),col="grey")
+# for (i in 2:100){lines(x=all_years_vector_id,y=infections[i,],col="grey")}
+# lines(x=all_years_vector_id,y=apply(infections,2,mean),lwd=2,col="blue")
+# load(paste0("../test-trajectories/trajectories_",id,".Rdata"))
+# plot(x=all_years_vector_id,y=trajectories[1,],type="l",ylim=c(0,0.7),col="grey")
+# for (i in 2:100){lines(x=all_years_vector_id,y=trajectories[i,],col="grey")}
+# lines(x=all_years_vector_id,y=apply(trajectories,2,mean),lwd=2,col="blue")
 
 st<-Sys.time()
 amis_output <- AMISforInfectiousDiseases::amis(

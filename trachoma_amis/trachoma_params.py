@@ -30,7 +30,7 @@ params = {'N': 2500,
           'vacc_reduce_duration': 0,
           'vacc_coverage': 0,  
           'vacc_waning_length': 52 * 5,
-          'importation_rate': 0.000008,
+          'importation_rate': 0,
           'importation_reduction_rate': (0.9)**(1/10)}
 
 sim_params = {'timesim':(52*96)+1,

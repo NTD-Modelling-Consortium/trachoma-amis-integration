@@ -22,7 +22,7 @@ START_DATE = date(1996, 1, 1)
 
 #id = os.getenv("SLURM_ARRAY_TASK_ID")
 # for testing
-id = 556
+id = 412
 mda_filepath = 'endgame_inputs/InputMDA_MTP_' + str(id) + '.csv'
 
 def set_start_date(datestr: str):
@@ -176,7 +176,7 @@ def build_transmission_model(
         # Must return 2d numpy array with:
         # rows = simulations
         # columns = data points
-        return np.transpose(
+        return [np.transpose(
             np.transpose(
                 [
                     # 'v' is a list, so convert it to NumPy array to index it from
@@ -185,6 +185,16 @@ def build_transmission_model(
                     for (v, r) in results
                 ]
             )
-        )
+        ),
+        np.transpose(
+            np.transpose(
+                [
+                    # 'v' is a list, so convert it to NumPy array to index it from
+                    # a list 'fitting_points'
+                    np.asarray(v["True_Infections_Disease_children_1_9"])[fitting_points]
+                    for (v, r) in results
+                ]
+            )
+        )]
 
     return run_trachoma
