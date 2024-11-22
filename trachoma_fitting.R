@@ -1,9 +1,9 @@
 
 # on cluster:
-#id = as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
+id = as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 # for testing:
-#id = 556
-id = 412
+#id = 561
+
 library(dplyr)
 library(reticulate)
 
@@ -13,6 +13,7 @@ library(AMISforInfectiousDiseases)
 setwd("~/Documents/trachoma-endgame/trachoma-amis-integration/")
 reticulate::use_virtualenv("~/Documents/trachoma-endgame/trachoma-venv", required=TRUE)
 amis_int_mod <- import("trachoma_amis")
+reticulate::py_config()
 
 # Load prevalence map and filter rows for TaskID == id
 load(paste0("../Maps/trachoma_maps.rds"))
@@ -75,11 +76,10 @@ dprior = function(x, log){
 
 prior = list(rprior=rprior,dprior=dprior)
 
-
 # Algorithm parameters
 amis_params<-default_amis_params()
-amis_params$max_iters=10
-amis_params$n_samples=500
+amis_params$max_iters=50
+amis_params$n_samples=1000
 amis_params$target_ess =500
 amis_params$sigma=0.0025
 amis_params$boundaries=c(-Inf,Inf)
@@ -138,7 +138,7 @@ transmission_model = function(seeds, params, n_tims) {
       infections =  rbind(infections,output[[2]])
       save(infections, file=paste0("../infections/infections",id,".Rdata"))
       
-      output_map_years = output[[1]][,which(all_years_vector_id %in% (years_vector_id+0.75))]
+      output_map_years = output[[1]][,which(all_years_vector_id %in% (years_vector_id+0.75)),drop=F]
       #output_map_years = output[,which(all_years_vector_id %in% (years_vector_id+0.75))]
     
       return(output_map_years)
@@ -161,33 +161,34 @@ transmission_model = function(seeds, params, n_tims) {
 #   # tryCatch(
 #   #   expr={
 #   output=model_func(seeds, params, n_tims)
-#   
-#   #save simulated trajectories 
+# 
+#   #save simulated trajectories
 #   load(paste0("../test-trajectories/trajectories_",id,".Rdata"))
 #   trajectories =  rbind(trajectories,output[[1]])
 #   #trajectories =  rbind(trajectories,output)
 #   save(trajectories, file=paste0("../test-trajectories/trajectories_",id,".Rdata"))
-#   
-#   
+# 
+# 
 #   #save simulated infections
 #   load(paste0("../test-infections/infections",id,".Rdata"))
 #   infections =  rbind(infections,output[[2]])
 #   save(infections, file=paste0("../test-infections/infections",id,".Rdata"))
-#   
+# 
 #   output_map_years = output[[1]][,which(all_years_vector_id %in% (years_vector_id+0.75))]
 #   #output_map_years = output[,which(all_years_vector_id %in% (years_vector_id+0.75))]
-#   
+# 
 #   return(output_map_years)
-#   
+# 
 #   #   },
 #   #   error=error_function
 #   # )
 # }
-# sampled_params_test = read.csv("../sampled_params_50886.csv") 
-# params = as.matrix(sampled_params_test %>%
-#   select(seed,beta,eff_cov))
-# params[,2] = params[,2]
-# params[,3] = 0.85
+# params = cbind(seed=1:10,rprior(10))
+# #sampled_params_test = read.csv("../sampled_params_50886.csv")
+# #params = as.matrix(sampled_params_test %>%
+# #  select(seed,beta,eff_cov))
+# #params[,2] = params[,2]
+# #params[,3] = 0.85
 # test=transmission_model(as.integer(params[,1]),params[,2:3],45)
 # par(mfrow=c(2,1))
 # load(paste0("../test-infections/infections",id,".Rdata"))
