@@ -1,6 +1,7 @@
 from datetime import date
 import copy
 import random
+import os 
 
 from joblib import Parallel, delayed
 import numpy as np
@@ -23,6 +24,7 @@ START_DATE = date(1996, 1, 1)
 id = os.getenv("SLURM_ARRAY_TASK_ID")
 # for testing
 #id = 561
+
 mda_filepath = 'endgame_inputs/InputMDA_MTP_' + str(id) + '.csv'
 
 def set_start_date(datestr: str):

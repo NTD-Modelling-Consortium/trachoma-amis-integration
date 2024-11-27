@@ -10,10 +10,10 @@ library(reticulate)
 # load trachoma model 
 # first 3 lines only necessary on local machine - on cluster will install R package, set working dir. and source venv before running script
 library(AMISforInfectiousDiseases)
-setwd("~/Documents/trachoma-endgame/trachoma-amis-integration/")
-reticulate::use_virtualenv("~/Documents/trachoma-endgame/trachoma-venv", required=TRUE)
-amis_int_mod <- import("trachoma_amis")
+#setwd("~/Documents/trachoma-endgame/trachoma-amis-integration/")
+reticulate::use_virtualenv("../trachoma-venv", required=TRUE)
 reticulate::py_config()
+amis_int_mod <- import("trachoma_amis")
 
 # Load prevalence map and filter rows for TaskID == id
 load(paste0("../Maps/trachoma_maps.rds"))
