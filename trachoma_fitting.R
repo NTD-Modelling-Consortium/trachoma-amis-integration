@@ -2,16 +2,17 @@
 # on cluster:
 id = as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 # for testing:
-#id = 561
+#id = 11
 
 library(dplyr)
 library(reticulate)
+library(AMISforInfectiousDiseases)
 
 # load trachoma model 
-# first 3 lines only necessary on local machine - on cluster will install R package, set working dir. and source venv before running script
-library(AMISforInfectiousDiseases)
-setwd("~/Documents/trachoma-endgame/trachoma-amis-integration/")
-reticulate::use_virtualenv("~/Documents/trachoma-endgame/trachoma-venv", required=TRUE)
+# for testing
+#setwd("~/Documents/trachoma-endgame/trachoma-amis-integration/")
+#reticulate::use_virtualenv("~/Documents/trachoma-endgame/trachoma-venv", required=TRUE)
+reticulate::use_virtualenv("../trachoma-venv", required=TRUE)
 amis_int_mod <- import("trachoma_amis")
 reticulate::py_config()
 
@@ -33,7 +34,7 @@ years_vector_id = years_vector[map_bool_id]
 prevalence_map = lapply(map_bool_id, function(t) prevalence_map[[t]])
 
 # define prior hyperparameters and boundaries
-beta_rate = 2
+beta_rate = 5
 beta_lb = 0
 beta_ub = Inf
 
