@@ -23,7 +23,7 @@ START_DATE = date(1996, 1, 1)
 
 id = os.getenv("SLURM_ARRAY_TASK_ID")
 # for testing
-#id = 11
+#id = 171
 mda_filepath = 'endgame_inputs/InputMDA_MTP_' + str(id) + '.csv'
 
 def set_start_date(datestr: str):
@@ -156,6 +156,7 @@ def build_transmission_model(
             numpy_state=random_state,
             doIHMEOutput=False,
             doSurvey=False,
+            distToUse = "Exponential",
         )
 
     def run_trachoma(seeds, params, n_tims):
