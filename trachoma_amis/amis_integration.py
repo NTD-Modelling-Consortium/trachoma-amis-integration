@@ -153,6 +153,7 @@ def build_transmission_model(
             numpy_state=random_state,
             doIHMEOutput=False,
             doSurvey=False,
+            distToUse = "Exponential",
         )
 
     def run_trachoma(seeds, params, n_tims):
