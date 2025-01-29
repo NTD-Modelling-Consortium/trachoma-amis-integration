@@ -5,11 +5,17 @@ library(tidyr)
 setwd("../")
 load("Maps/trachoma_maps.rds")
 load("Maps/trachoma_map_years.rds")
-failed_ids = c(29, # fitting didn't work properly
-	       133,134, # randomly stopped?
-               123,153,196,296,315,322,374,375,376,377,378,379,380,381,495,502,515,527,530,532,533,539,541)
-ctd_ids = c(55,63,86,113,114,121,145,167,168,170,171,173,174,175,179,180,181,191,192,197,198,199,200,
-            203,205,206,208,262,276,298,326,327,362,363,370,371,372,412,435,441,446,447,471,503,505,507,508,510,528,531,535,549) # ids that were run for extra iterations
+
+# from Igor's runs
+failed_ids = c(123,150,170,196,203,296,315,369,371,373,376,377,379,380,495,502,515,528,530,531,532,533,535,539,541)
+ctd_ids = c()
+
+# 30 Jan:  from previous runs
+#failed_ids = c(29, # fitting didn't work properly
+#	       133,134, # randomly stopped?
+#               123,153,196,296,315,322,374,375,376,377,378,379,380,381,495,502,515,527,530,532,533,539,541)
+#ctd_ids = c(55,63,86,113,114,121,145,167,168,170,171,173,174,175,179,180,181,191,192,197,198,199,200,
+ #203,205,206,208,262,276,298,326,327,362,363,370,371,372,412,435,441,446,447,471,503,505,507,508,510,528,531,535,549) # ids that were run for extra iterations
 # failed ctd runs: 150,369
 
 # loading 'iu_task_lookup' (batches-IUs look up table for the fitting)

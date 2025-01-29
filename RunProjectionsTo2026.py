@@ -8,7 +8,7 @@ import os
 import pandas as pd
 
 
-folder_id = 20250110133605 # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
+folder_id = "source-data-20250130" # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
 species = "trachoma"
 species_prefix = "Trachoma_"
 IU_SLURM = os.getenv("SLURM_ARRAY_TASK_ID")
@@ -204,7 +204,7 @@ mda_filepath = 'endgame_inputs/InputMDA_MTP_projections_' + str(iu) + '.csv'
     file name for IU specific parameters
 '''
 #ParamFilePath = '~/Documents/trachoma/post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_' + str(iu) + '.csv'
-ParamFilePath = f'projections/{species}/source-data-20250110/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/InputBeta_{species_prefix}{country}' + str(iu).zfill(5) + '.csv'
+ParamFilePath = f'projections/{species}/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/InputBeta_{species_prefix}{country}' + str(iu).zfill(5) + '.csv'
 print(ParamFilePath)
 amisparams = pd.read_csv(ParamFilePath)
 amisparams.columns = [s.replace(' ', '') for s in amisparams.columns]
@@ -278,7 +278,7 @@ simData=[item[0] for item in results]
 '''
 
 # want outputs like <ascaris-folder>/AGO/AGO02049/Asc_AGO02049.p
-newOutputSimDataFilePath = f'projections/trachoma/source-data-20250110/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/{species_prefix}{country}' + str(iu).zfill(5) + '.p'
+newOutputSimDataFilePath = f'projections/trachoma/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/{species_prefix}{country}' + str(iu).zfill(5) + '.p'
 #newOutputSimDataFilePath = "pickleETC.p"
 
 # only save subset of data
@@ -309,7 +309,7 @@ pickle.dump( subset_sim_data, open( newOutputSimDataFilePath, 'wb' ) )
 
 NTDMC =  getResultsNTDMC(results, START_DATE, sim_params["burnin"])
 
-PrevDatasetFilePath = f'projections/trachoma/source-data-20250110/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/PrevDataset_{species_prefix}{country}' + str(iu).zfill(5) + '.csv'
+PrevDatasetFilePath = f'projections/trachoma/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/PrevDataset_{species_prefix}{country}' + str(iu).zfill(5) + '.csv'
 #PrevDatasetFilePath = "NTDMCETC.csv"
 print("PrevDataset_species_iu.csv file name:")
 print(PrevDatasetFilePath)
