@@ -265,6 +265,7 @@ def do_single_run(seed, beta, coverage, i):
         numpy_state=random_state,
         doIHMEOutput=False,
         doSurvey=False,
+        distToUse = "Exponential",
     )
 
 results = Parallel(n_jobs=num_cores)(

@@ -10,9 +10,12 @@ setwd("../post_AMIS_analysis/outputs")
 set.seed(123)
 folder_id = "source-data-20250130" # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
 
-
 # from Igor's runs
-failed_ids = c(123,150,170,196,203,296,315,369,371,373,376,377,379,380,495,502,515,528,530,531,532,533,535,539,541)
+#failed_ids = c(123,150,170,196,203,296,315,369,371,373,376,377,379,380,495,502,515,528,530,531,532,533,535,539,541)
+# from Raiha's runs
+failed_ids = c(123,150,196,203,205,296,315,369,370,371,373,376,379,380,495,502,515,528,530,531,532,533,535,539,541)
+
+
 ctd_ids = c()
 
 # 30 Jan:  from previous runs
@@ -38,7 +41,7 @@ for(species in species_all){
   if (!dir.exists(path_folder_id)) {dir.create(path_folder_id)}
 
   for(country in countries){
-    path_country <- paste0("../../ntd-model-trachoma/projections/",species,"//",folder_id,"/",country,"/")
+    path_country <- paste0("../../ntd-model-trachoma/projections/",species,"/",folder_id,"/",country,"/")
     if (!dir.exists(path_country)) {dir.create(path_country)}
   }
   
@@ -75,7 +78,7 @@ for(species in species_all){
         country <- df_IU_country[wh, "country"]
         
         iu0 <- sprintf("%05d", as.integer(iu))
-        path_iu <- paste0("../../ntd-model-trachoma/projections/",species,"//",folder_id,"/",country,"/",country, iu0,"/")
+        path_iu <- paste0("../../ntd-model-trachoma/projections/",species,"/",folder_id,"/",country,"/",country, iu0,"/")
         if (!dir.exists(path_iu)) {dir.create(path_iu)}
         
         file_name_old <- paste0("../InputPars_MTP_trachoma/InputPars_MTP_",iu,".csv")
