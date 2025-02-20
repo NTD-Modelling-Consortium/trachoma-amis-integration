@@ -97,7 +97,7 @@ for(species in species_all){
       	colnames(sampled_params_full) = c("seed",paste0("beta",1926:2024),"eff_cov", "k_parameter")
   
 
-       	if (randomWalk=T){      	
+       	if (randomWalk==T){      	
        	  
        	  sampled_params_full[,1] = sampled_params[,1]
        	  sampled_params_full[,101] = sampled_params[,6]       
