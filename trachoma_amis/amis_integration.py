@@ -5,7 +5,7 @@ import os
 from joblib import Parallel, delayed
 import numpy as np
 
-from trachoma.trachoma_functions import (
+from ntdmc_trachoma.trachoma_functions import (
     run_single_simulation,
     Set_inits,
     readPlatformData,
@@ -22,7 +22,7 @@ START_DATE = date(1996, 1, 1)
 
 id = os.getenv("SLURM_ARRAY_TASK_ID")
 mda_filepath = 'endgame_inputs/InputMDA_MTP_' + str(id) + '.csv'
-
+distToUse="Expo"
 def set_start_date(datestr: str):
     global START_DATE
     try:
@@ -66,8 +66,8 @@ def setup():
     )
 
 
-def create_initial_population(initial_prevalence: float, MDAData):
-    vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state())
+def create_initial_population(initial_prevalence: float, MDAData, distToUse="Expo"):
+    vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state(), distToUse=distToUse)
     ids = np.random.choice(
         range(parameters["N"]), int(initial_prevalence * parameters["N"]), replace=False
     )
@@ -97,7 +97,7 @@ def alterMDACoverage(MDAData, coverage):
 
 def build_transmission_model(
         fitting_points: list[int],
-        initial_infect_frac=0.01,
+        initial_infect_frac=0.1,
         num_cores=-2
 ):
     """Create a closure for the AMIS to run the trachoma model.
@@ -132,11 +132,12 @@ def build_transmission_model(
         sim_params['burnin'],
     )
 
-    def do_single_run(seed, beta, coverage, i):
+    def do_single_run(seed, beta, coverage, k_parameter, i):
         np.random.seed(seed)
         altered_mda_coverage = alterMDACoverage(MDAData, coverage)
-        init_vals = create_initial_population(initial_infect_frac, altered_mda_coverage)
+        init_vals = create_initial_population(initial_infect_frac, altered_mda_coverage,distToUse)
         random_state = np.random.get_state()
+        parameters['infection_risk_shape'] = k_parameter
         return run_single_simulation(
             pickleData=copy.deepcopy(init_vals),
             params=parameters,
@@ -153,13 +154,16 @@ def build_transmission_model(
             numpy_state=random_state,
             doIHMEOutput=False,
             doSurvey=False,
-            distToUse = "Exponential",
+            distToUse = distToUse,
+            postMDAImportationReduction = True
         )
 
     def run_trachoma(seeds, params, n_tims):
+
         results: list[tuple[dict, list]]
         results = Parallel(n_jobs=num_cores)(
-            delayed(do_single_run)(seed, beta=amisPars[0], coverage=amisPars[1], i=i)
+            delayed(do_single_run)(seed, beta=amisPars[0:(int(sim_params['timesim']/52))], 
+                                   coverage=amisPars[-2], k_parameter = amisPars[-1], i=i)
             # params now will have 2 columns, one for beta and one for coverage
             # iterate over these, naming them amisPars, and amisPars[0] being beta
             # amisPars[1] being the coverage value

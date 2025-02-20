@@ -7,7 +7,17 @@ id = as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 library(dplyr)
 library(reticulate)
 library(AMISforInfectiousDiseases)
+library(truncnorm)
 
+# setup code to vary beta throughout simulation
+randomWalk = TRUE
+# parameters of beta distribution
+randomWalk_a = 5
+randomWalk_b = 1
+# index of the column of params_full defined in transmission_model
+yearschange_index = c(2000,2010,2020)-1926+1 # 1926 is data start date (1996) minus 70 year burn in. 
+n_timschange = length(yearschange_index)
+ 
 # load trachoma model 
 # for testing
 #setwd("~/Documents/trachoma-endgame/trachoma-amis-integration/")
@@ -40,36 +50,90 @@ beta_ub = Inf
 
 eff_cov_lb = 0
 eff_cov_ub = 1
-a_eff_cov = 2
-b_eff_cov = 2
+a_eff_cov = 5
+b_eff_cov = 2 
 
-# random number generator
+k_mean = 6.4 # based on data from Gambia
+k_sd = 3
+k_lb = 0.01
+k_ub = 20 
+
 rprior = function(n){
-  params = matrix(NA,ncol=2,nrow=n)
-  params[,1] = rexp(n,rate=beta_rate)
-  params[,2] = rbeta(n,a_eff_cov,b_eff_cov)
-  colnames(params) = c("beta","eff_cov")
+  
+  params = matrix(NA,ncol=6,nrow=n)
+  colnames(params) = c("beta_init",paste0("beta",yearschange_index),"eff_cov", "k_parameter")
+  
+  if (randomWalk==TRUE){
+    
+    params[,1] = rexp(n,rate=beta_rate)
+    params[,2:4] = rbeta(n*3, randomWalk_a, randomWalk_b)
+
+  } else {
+      
+    params = matrix(NA,ncol=6,nrow=n)
+    params[,1:4] = matrix(rep(rexp(n,rate=beta_rate),4),ncol=4)
+  
+  }
+  params[,5] = rbeta(n,a_eff_cov,b_eff_cov)
+  params[,6] = rtruncnorm(n,a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)
+  
   return(params)
 }
 
 # prior density
 dprior = function(x, log){
-  if(!is.matrix(x)){
-    if (log){
-      d = sum(dexp(x[1],rate=beta_rate,log=T),
-              dbeta(x[2],a_eff_cov,b_eff_cov,log=T))
-    } else {
-      d = prod(dexp(x[1],rate=beta_rate,log=F),
-               dbeta(x[2],a_eff_cov,b_eff_cov,log=F))
-    }
+  if(randomWalk==TRUE){
     
-  } else {
-    if (log){
-      d = sum(dexp(x[,1],rate=beta_rate,log=T),
-              dbeta(x[,2],a_eff_cov,b_eff_cov,log=T))
+    
+    if(!is.matrix(x)){
+      if (log){
+        d = sum(dexp(x[1],rate=beta_rate,log=T),
+                dbeta(x[2:4], randomWalk_a, randomWalk_b,log=T),
+                dbeta(x[5],a_eff_cov,b_eff_cov,log=T),
+                log(dtruncnorm(x[6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)))
+      } else {
+        d = prod(dexp(x[1],rate=beta_rate,log=F),
+                 dbeta(x[2:4], randomWalk_a, randomWalk_b,log=F),
+                 dbeta(x[5],a_eff_cov,b_eff_cov,log=F),
+                 dtruncnorm(x[6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd))
+      }
+      
     } else {
-      d = prod(dexp(x[,1],rate=beta_rate,log=F),
-               dbeta(x[,2],a_eff_cov,b_eff_cov,log=F))
+      if (log){
+        d = sum(dexp(x[,1],rate=beta_rate,log=T),
+                dbeta(x[,2:4], randomWalk_a, randomWalk_b,log=T),
+                dbeta(x[,5],a_eff_cov,b_eff_cov,log=T),
+                log(dtruncnorm(x[,6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)))
+      } else {
+        d = prod(dexp(x[,1],rate=beta_rate,log=F),
+                 dbeta(x[,2:4], randomWalk_a, randomWalk_b,log=F),
+                 dbeta(x[,5],a_eff_cov,b_eff_cov,log=F),
+                 dtruncnorm(x[,6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd))
+      }
+    }
+  } else {
+    
+    if(!is.matrix(x)){
+      if (log){
+        d = sum(dexp(x[1],rate=beta_rate,log=T),
+                dbeta(x[5],a_eff_cov,b_eff_cov,log=T),
+                log(dtruncnorm(x[6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)))
+      } else {
+        d = prod(dexp(x[1],rate=beta_rate,log=F),
+                 dbeta(x[5],a_eff_cov,b_eff_cov,log=F),
+                 dtruncnorm(x[6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd))
+      }
+      
+    } else {
+      if (log){
+        d = sum(dexp(x[,1],rate=beta_rate,log=T),
+                dbeta(x[,5],a_eff_cov,b_eff_cov,log=T),
+                log(dtruncnorm(x[,6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)))
+      } else {
+        d = prod(dexp(x[,1],rate=beta_rate,log=F),
+                 dbeta(x[,5],a_eff_cov,b_eff_cov,log=F),
+                 dtruncnorm(x[,6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd))
+      }
     }
   }
   return(d)
@@ -81,10 +145,9 @@ prior = list(rprior=rprior,dprior=dprior)
 amis_params<-default_amis_params()
 amis_params$max_iters=50
 amis_params$n_samples=1000
-amis_params$target_ess =500
+amis_params$target_ess=500
 amis_params$sigma=0.0025
 amis_params$boundaries=c(-Inf,Inf)
-amis_params$boundaries_param = matrix(c(beta_lb,eff_cov_lb,beta_ub,eff_cov_ub),ncol=2)
 
 # shell to save trajectories
 trajectories = c() # save simulated trajectories as code is running
@@ -125,7 +188,27 @@ error_function <- function(e) {
 transmission_model = function(seeds, params, n_tims) {
   # tryCatch(
   #   expr={
-      output=model_func(seeds, params, n_tims)
+       
+      # fill in beta years so there is 1 beta column every year
+      params_full = matrix(NA,ncol=98,nrow=nrow(params))
+      colnames(params_full) = c(paste0("beta",1926:2021),"eff_cov", "k_parameter")
+  
+      n_reps_1 = yearschange_index[1] - 1
+      params_full[,1:n_reps_1] = matrix(rep(params[,1],n_reps_1),ncol=n_reps_1)
+      
+      n_reps_2 = yearschange_index[2] - yearschange_index[1] 
+      params_full[,yearschange_index[1]:(yearschange_index[2]-1)] = matrix(rep(params[,1]*params[,2],n_reps_2),ncol=n_reps_2)
+      
+      n_reps_3 = yearschange_index[3] - yearschange_index[2] 
+      params_full[,yearschange_index[2]:(yearschange_index[3]-1)] = matrix(rep(params[,1]*params[,2]*params[,3],n_reps_3),ncol=n_reps_3)
+      
+      n_reps_4 = (2022-1926+1) - yearschange_index[3] 
+      params_full[,yearschange_index[3]:(2022-1926)] = matrix(rep(params[,1]*params[,2]*params[,3]*params[,4],n_reps_4),ncol=n_reps_4)
+
+      params_full[,97:98] = params[,5:6]
+  
+      # run model
+      output=model_func(seeds, params_full, n_tims)
       
       #save simulated trajectories 
       load(paste0("../trajectories/trajectories_",id,".Rdata"))
@@ -207,8 +290,7 @@ amis_output <- AMISforInfectiousDiseases::amis(
     seed=id,
     amis_params=amis_params,
     transmission_model=transmission_model,
-    prior,
-    output_dir = paste0("../amis_intermittant_outputs/batch",id,"_")
+    prior
 )
 en<-Sys.time()
 dur_amis<-as.numeric(difftime(en,st,units="mins"))

@@ -1,4 +1,4 @@
-from trachoma.trachoma_functions import *
+from ntdmc_trachoma.trachoma_functions import *
 import multiprocessing
 from joblib import Parallel, delayed
 import pickle
@@ -8,12 +8,12 @@ import os
 import pandas as pd
 
 
-folder_id = "source-data-20250130" # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
+folder_id = "source-data-20250220" # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
 species = "trachoma"
 species_prefix = "Trachoma_"
 IU_SLURM = os.getenv("SLURM_ARRAY_TASK_ID")
 num_cores = 10
-
+distToUse = "Expo"
 
 start = time.time()
 
@@ -50,9 +50,13 @@ parameters = {'N': 2500,
           'vacc_reduce_duration': 0,
           'vacc_coverage': 0,  
           'vacc_waning_length': 52 * 5,
-          'importation_rate': 1/(52*2500),
-          #'importation_rate': 0.00008,
-          'importation_reduction_rate': (0.9)**(1/10)}
+          'importation_rate': 0.000008,
+          'importation_reduction_rate': (0.9)**(1/10),
+          'infection_risk_shape':6.4, # extra parameter needed for infection risk shape. equivalent to k in STH/sch model.
+                                        #Set to a very high number if you want to assume everyone is the same
+          'min_importation_rate':  1/(20 * 52 * 2500), # some small number for the minimum importation rate. Can be 0 if you want
+          'importation_reduction_length' : 25} # time in weeks after performing an MDA which we wait before reducing the importation rate
+
 
 sim_params = {'timesim':(52*100)-1,
               'burnin': (52*70)-1,
@@ -121,8 +125,8 @@ def setup():
     )
 
 
-def create_initial_population(initial_prevalence: float, MDAData):
-    vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state())
+def create_initial_population(initial_prevalence: float, MDAData, distToUse="Expo"):
+    vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state(), distToUse=distToUse)
     ids = np.random.choice(
         range(parameters["N"]), int(initial_prevalence * parameters["N"]), replace=False
     )
@@ -212,8 +216,9 @@ amisparams.columns = [s.replace(' ', '') for s in amisparams.columns]
 # define the lists of random seeds, R0 and k
 seeds = amisparams.iloc[:, 0].tolist()
 seeds=list(map(int, seeds))
-betas = amisparams.iloc[:, 1].tolist()
-coverages = amisparams.iloc[:, 2].tolist()
+betas = amisparams.iloc[:, 1:(int(sim_params['timesim']/52)+1)].tolist()
+coverages = amisparams.iloc[:,-2].tolist()
+k_parameter = amisparams.iloc[:,-1].tolist()
 
 '''
     numSims should be set to 200
@@ -244,11 +249,12 @@ outputTimes = get_Intervention_times(
     sim_params['burnin'],
 )
 
-def do_single_run(seed, beta, coverage, i):
+def do_single_run(seed, beta, coverage, k_parameter, i):
     np.random.seed(seed)
     altered_mda_coverage = alterMDACoverage(MDAData, coverage)
     init_vals = create_initial_population(initial_infect_frac, altered_mda_coverage)
     random_state = np.random.get_state()
+    parameters['infection_risk_shape'] = k_parameter
     return run_single_simulation(
         pickleData=copy.deepcopy(init_vals),
         params=parameters,
@@ -265,11 +271,12 @@ def do_single_run(seed, beta, coverage, i):
         numpy_state=random_state,
         doIHMEOutput=False,
         doSurvey=False,
-        distToUse = "Exponential",
+        distToUse = distToUse,
+        postMDAImportationReduction = True
     )
 
 results = Parallel(n_jobs=num_cores)(
-             delayed(do_single_run)(seeds[i], betas[i], coverages[i], i) for i in range(numSims)
+             delayed(do_single_run)(seeds[i], betas[i], coverages[i], k_parameter[i], i) for i in range(numSims)
          )
 
 simData=[item[0] for item in results]

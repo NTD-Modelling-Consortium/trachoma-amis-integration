@@ -8,17 +8,19 @@ setwd("../post_AMIS_analysis/outputs")
 # species <- "mansoni_low"
 
 set.seed(123)
-folder_id = "source-data-20250130" # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
+folder_id = "source-data-20250220" # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
 
+
+failed_ids = c() # this needs to be filled in once we know which batches failed
+ctd_ids = c()
+
+# Early Feb: second runs
 # from Igor's runs
 #failed_ids = c(123,150,170,196,203,296,315,369,371,373,376,377,379,380,495,502,515,528,530,531,532,533,535,539,541)
 # from Raiha's runs
-failed_ids = c(123,150,196,203,205,296,315,369,370,371,373,376,379,380,495,502,515,528,530,531,532,533,535,539,541)
+#failed_ids = c(123,150,196,203,205,296,315,369,370,371,373,376,379,380,495,502,515,528,530,531,532,533,535,539,541)
 
-
-ctd_ids = c()
-
-# 30 Jan:  from previous runs
+# 30 Jan:  from first runs
 #failed_ids = c(29, # fitting didn't work properly
 #              133,134, # randomly stopped?
 #               123,153,196,296,315,322,374,375,376,377,378,379,380,381,495,502,515,527,530,532,533,539,541)
@@ -84,7 +86,7 @@ for(species in species_all){
         file_name_old <- paste0("../InputPars_MTP_trachoma/InputPars_MTP_",iu,".csv")
         sampled_params <- read.csv(file_name_old)
         
-        sampled_params <- sampled_params[, c("seed", "beta", "eff_cov")]
+        sampled_params <- sampled_params[, c("seed", "beta_init", paste0("beta",yearschange_index),"eff_cov", "k_parameter")]
         file_name_new <- paste0(path_iu, paste0("InputBeta_",species_prefix, country, iu0,".csv"))
         write.csv(sampled_params, file=file_name_new, row.names = F)
       }

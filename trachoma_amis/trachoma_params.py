@@ -30,9 +30,13 @@ params = {'N': 2500,
           'vacc_reduce_duration': 0,
           'vacc_coverage': 0,  
           'vacc_waning_length': 52 * 5,
-          'importation_rate': 1/(52*2500),
-          #'importation_rate': 0.00008,
-          'importation_reduction_rate': (0.9)**(1/10)}
+          'importation_rate': 0.000008,
+          'importation_reduction_rate': (0.9)**(1/10),
+          'infection_risk_shape':6.4, # extra parameter needed for infection risk shape. equivalent to k in STH/sch model.
+                                        #Set to a very high number if you want to assume everyone is the same
+          'min_importation_rate':  1/(20 * 52 * 2500), # some small number for the minimum importation rate. Can be 0 if you want
+          'importation_reduction_length' : 25} # time in weeks after performing an MDA which we wait before reducing the importation rate
+
 
 sim_params = {'timesim':(52*96)+1,
               'burnin': (52*70)-1,
