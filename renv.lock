@@ -11,14 +11,14 @@
   "Packages": {
     "AMISforInfectiousDiseases": {
       "Package": "AMISforInfectiousDiseases",
-      "Version": "0.1.0",
+      "Version": "0.1.1",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "AMISforInfectiousDiseases-dev",
       "RemoteUsername": "drsimonspencer",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "5c971e3dde6cd4962e3bf7652241e8d3b481124d",
+      "RemoteRepo": "AMISforInfectiousDiseases-dev",
+      "RemoteRef": "main",
+      "RemoteSha": "53af1c09c2a23c8518993be8acad955f212f9aaa",
       "Requirements": [
         "Hmisc",
         "R",
@@ -28,7 +28,7 @@
         "mnormt",
         "weights"
       ],
-      "Hash": "ec9300dedf378b940b95685d33dd9d16"
+      "Hash": "8097ef9d079cbe316a6bbfe505600834"
     },
     "Formula": {
       "Package": "Formula",
@@ -1601,6 +1601,16 @@
         "xfun"
       ],
       "Hash": "cfbad971a71f0e27cec22e544a08bc3b"
+    },
+    "truncnorm": {
+      "Package": "truncnorm",
+      "Version": "1.0-9",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R"
+      ],
+      "Hash": "ef5b32c5194351ff409dfb37ca9468f1"
     },
     "tzdb": {
       "Package": "tzdb",
