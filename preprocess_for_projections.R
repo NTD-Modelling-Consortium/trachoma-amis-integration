@@ -9,8 +9,9 @@ load("Maps/trachoma_map_years.rds")
 # from Igor's runs
 #failed_ids = c(123,150,170,196,203,296,315,369,371,373,376,377,379,380,495,502,515,528,530,531,532,533,535,539,541)
 # from Raiha's runs
-failed_ids = c(123,150,196,203,205,296,315,369,370,371,373,376,379,380,495,502,515,528,530,531,532,533,535,539,541)
+#failed_ids = c(123,150,196,203,205,296,315,369,370,371,373,376,379,380,495,502,515,528,530,531,532,533,535,539,541)
 
+failed_ids = c() # this needs to be updated once we know which batches failed
 ctd_ids = c()
 
 # 30 Jan:  from previous runs

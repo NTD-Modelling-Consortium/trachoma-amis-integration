@@ -216,7 +216,7 @@ amisparams.columns = [s.replace(' ', '') for s in amisparams.columns]
 # define the lists of random seeds, R0 and k
 seeds = amisparams.iloc[:, 0].tolist()
 seeds=list(map(int, seeds))
-betas = amisparams.iloc[:, 1:(int(sim_params['timesim']/52)+1)].tolist()
+betas = amisparams.iloc[:, 1:(int((sim_params['timesim'])/52)+1)].to_numpy()
 coverages = amisparams.iloc[:,-2].tolist()
 k_parameter = amisparams.iloc[:,-1].tolist()
 
@@ -276,7 +276,7 @@ def do_single_run(seed, beta, coverage, k_parameter, i):
     )
 
 results = Parallel(n_jobs=num_cores)(
-             delayed(do_single_run)(seeds[i], betas[i], coverages[i], k_parameter[i], i) for i in range(numSims)
+        delayed(do_single_run)(seeds[i], betas[i,:], coverages[i], k_parameter[i], i) for i in range(numSims)
          )
 
 simData=[item[0] for item in results]
