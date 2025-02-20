@@ -67,15 +67,15 @@ rprior = function(n){
     
     params[,1] = rexp(n,rate=beta_rate)
     params[,2:4] = rbeta(n*3, randomWalk_a, randomWalk_b)
-
+    params[,5] = rbeta(n,a_eff_cov,b_eff_cov)
+    params[,6] = rtruncnorm(n,a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)
   } else {
       
-    params = matrix(NA,ncol=6,nrow=n)
-    params[,1:4] = matrix(rep(rexp(n,rate=beta_rate),4),ncol=4)
-  
+    params = matrix(NA,ncol=3,nrow=n)
+    params[,1] = matrix(rexp(n,rate=beta_rate),ncol=1)
+    params[,2] = rbeta(n,a_eff_cov,b_eff_cov)
+    params[,3] = rtruncnorm(n,a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)
   }
-  params[,5] = rbeta(n,a_eff_cov,b_eff_cov)
-  params[,6] = rtruncnorm(n,a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)
   
   return(params)
 }
@@ -116,23 +116,23 @@ dprior = function(x, log){
     if(!is.matrix(x)){
       if (log){
         d = sum(dexp(x[1],rate=beta_rate,log=T),
-                dbeta(x[5],a_eff_cov,b_eff_cov,log=T),
-                log(dtruncnorm(x[6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)))
+                dbeta(x[2],a_eff_cov,b_eff_cov,log=T),
+                log(dtruncnorm(x[3],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)))
       } else {
         d = prod(dexp(x[1],rate=beta_rate,log=F),
-                 dbeta(x[5],a_eff_cov,b_eff_cov,log=F),
-                 dtruncnorm(x[6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd))
+                 dbeta(x[2],a_eff_cov,b_eff_cov,log=F),
+                 dtruncnorm(x[3],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd))
       }
       
     } else {
       if (log){
         d = sum(dexp(x[,1],rate=beta_rate,log=T),
-                dbeta(x[,5],a_eff_cov,b_eff_cov,log=T),
-                log(dtruncnorm(x[,6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)))
+                dbeta(x[,2],a_eff_cov,b_eff_cov,log=T),
+                log(dtruncnorm(x[,3],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd)))
       } else {
         d = prod(dexp(x[,1],rate=beta_rate,log=F),
-                 dbeta(x[,5],a_eff_cov,b_eff_cov,log=F),
-                 dtruncnorm(x[,6],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd))
+                 dbeta(x[,2],a_eff_cov,b_eff_cov,log=F),
+                 dtruncnorm(x[,3],a=k_lb, b=k_ub, mean=k_mean, sd=k_sd))
       }
     }
   }
@@ -193,19 +193,30 @@ transmission_model = function(seeds, params, n_tims) {
       params_full = matrix(NA,ncol=98,nrow=nrow(params))
       colnames(params_full) = c(paste0("beta",1926:2021),"eff_cov", "k_parameter")
   
-      n_reps_1 = yearschange_index[1] - 1
-      params_full[,1:n_reps_1] = matrix(rep(params[,1],n_reps_1),ncol=n_reps_1)
-      
-      n_reps_2 = yearschange_index[2] - yearschange_index[1] 
-      params_full[,yearschange_index[1]:(yearschange_index[2]-1)] = matrix(rep(params[,1]*params[,2],n_reps_2),ncol=n_reps_2)
-      
-      n_reps_3 = yearschange_index[3] - yearschange_index[2] 
-      params_full[,yearschange_index[2]:(yearschange_index[3]-1)] = matrix(rep(params[,1]*params[,2]*params[,3],n_reps_3),ncol=n_reps_3)
-      
-      n_reps_4 = (2022-1926+1) - yearschange_index[3] 
-      params_full[,yearschange_index[3]:(2022-1926)] = matrix(rep(params[,1]*params[,2]*params[,3]*params[,4],n_reps_4),ncol=n_reps_4)
-
-      params_full[,97:98] = params[,5:6]
+      if(randomWalk==T){
+        
+        n_reps_1 = yearschange_index[1] - 1
+        params_full[,1:n_reps_1] = matrix(rep(params[,1],n_reps_1),ncol=n_reps_1)
+        
+        n_reps_2 = yearschange_index[2] - yearschange_index[1] 
+        params_full[,yearschange_index[1]:(yearschange_index[2]-1)] = matrix(rep(params[,1]*params[,2],n_reps_2),ncol=n_reps_2)
+        
+        n_reps_3 = yearschange_index[3] - yearschange_index[2] 
+        params_full[,yearschange_index[2]:(yearschange_index[3]-1)] = matrix(rep(params[,1]*params[,2]*params[,3],n_reps_3),ncol=n_reps_3)
+        
+        n_reps_4 = (2022-1926+1) - yearschange_index[3] 
+        params_full[,yearschange_index[3]:(2022-1926)] = matrix(rep(params[,1]*params[,2]*params[,3]*params[,4],n_reps_4),ncol=n_reps_4)
+        
+        params_full[,97:98] = params[,5:6]
+        
+      } else {
+        
+        n_reps = (2022-1926+1) - 1 
+        params_full[,1:(2022-1926)] = matrix(rep(params[,1],n_reps),ncol=n_reps)
+        
+        params_full[,97:98] = params[,2:3]
+        
+      }
   
       # run model
       output=model_func(seeds, params_full, n_tims)

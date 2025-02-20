@@ -9,6 +9,8 @@ setwd("../post_AMIS_analysis")
 
 set.seed(123)
 folder_id = "source-data-20250220" # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
+
+randomWalk = TRUE
 yearschange_index = c(2000,2010,2020)-1926+1 # 1926 is data start date (1996) minus 70 year burn in. 
 n_timschange = length(yearschange_index)
 
@@ -91,24 +93,39 @@ for(species in species_all){
         sampled_params <- sampled_params[, c("seed", "beta_init", paste0("beta",yearschange_index),"eff_cov", "k_parameter")]
       
 
-	sampled_params_full = matrix(NA,ncol=102,nrow=nrow(sampled_params))
-	colnames(sampled_params_full) = c("seed",paste0("beta",1926:2024),"eff_cov", "k_parameter")
-	sampled_params_full[,1] = sampled_params[,1]
-        sampled_params_full[,101] = sampled_params[,6]       
-       	sampled_params_full[,102] = sampled_params[,7]      
+      	sampled_params_full = matrix(NA,ncol=102,nrow=nrow(sampled_params))
+      	colnames(sampled_params_full) = c("seed",paste0("beta",1926:2024),"eff_cov", "k_parameter")
+  
 
-        n_reps_1 = yearschange_index[1] - 1
-        sampled_params_full[,2:(n_reps_1+1)] = matrix(rep(sampled_params[,2],n_reps_1),ncol=n_reps_1)
-        
-        n_reps_2 = yearschange_index[2] - yearschange_index[1] 
-        sampled_params_full[,(yearschange_index[1]+1):(yearschange_index[2])] = matrix(rep(sampled_params[,2]*sampled_params[,3],n_reps_2),ncol=n_reps_2)
-        
-        n_reps_3 = yearschange_index[3] - yearschange_index[2] 
-        sampled_params_full[,(yearschange_index[2]+1):(yearschange_index[3])] = matrix(rep(sampled_params[,2]*sampled_params[,3]*sampled_params[,4],n_reps_3),ncol=n_reps_3)
-        
-        n_reps_4 = (2026-1926+1) - yearschange_index[3] 
-        sampled_params_full[,(yearschange_index[3]+1):(2026-1926+1)] = matrix(rep(sampled_params[,2]*sampled_params[,3]*sampled_params[,4]*sampled_params[,5],n_reps_4),ncol=n_reps_4)
-	
+       	if (randomWalk=T){      	
+       	  
+       	  sampled_params_full[,1] = sampled_params[,1]
+       	  sampled_params_full[,101] = sampled_params[,6]       
+       	  sampled_params_full[,102] = sampled_params[,7]   
+       	  
+       	  n_reps_1 = yearschange_index[1] - 1
+       	  sampled_params_full[,2:(n_reps_1+1)] = matrix(rep(sampled_params[,2],n_reps_1),ncol=n_reps_1)
+       	  
+       	  n_reps_2 = yearschange_index[2] - yearschange_index[1] 
+       	  sampled_params_full[,(yearschange_index[1]+1):(yearschange_index[2])] = matrix(rep(sampled_params[,2]*sampled_params[,3],n_reps_2),ncol=n_reps_2)
+       	  
+       	  n_reps_3 = yearschange_index[3] - yearschange_index[2] 
+       	  sampled_params_full[,(yearschange_index[2]+1):(yearschange_index[3])] = matrix(rep(sampled_params[,2]*sampled_params[,3]*sampled_params[,4],n_reps_3),ncol=n_reps_3)
+       	  
+       	  n_reps_4 = (2026-1926) - yearschange_index[3] 
+       	  sampled_params_full[,(yearschange_index[3]+1):(2026-1926)] = matrix(rep(sampled_params[,2]*sampled_params[,3]*sampled_params[,4]*sampled_params[,5],n_reps_4),ncol=n_reps_4)
+       	  
+       	} else {
+       	  
+       	  sampled_params_full[,1] = sampled_params[,1]
+       	  sampled_params_full[,101] = sampled_params[,3]       
+       	  sampled_params_full[,102] = sampled_params[,4]   
+    
+       	  n_reps = (2026-1926) - 1
+       	  sampled_params_full[,2:(2026-1926)] = matrix(rep(sampled_params[,2],n_reps),ncol=n_reps)
+       	  
+       	}
+
         file_name_new <- paste0(path_iu, paste0("InputBeta_",species_prefix, country, iu0,".csv"))
         write.csv(sampled_params_full, file=file_name_new, row.names = F)
       }
