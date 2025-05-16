@@ -8,7 +8,7 @@ import os
 import pandas as pd
 
 
-folder_id = "source-data-20250220" # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
+folder_id = "source-data-20250220"  # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
 species = "trachoma"
 species_prefix = "Trachoma_"
 IU_SLURM = os.getenv("SLURM_ARRAY_TASK_ID")
@@ -18,79 +18,81 @@ distToUse = "Expo"
 start = time.time()
 
 initial_infect_frac = 0.1
-parameters = {'N': 2500,
-          'av_I_duration' : 2,
-          'av_ID_duration':300/7,
-          'inf_red':0.45,
-          'min_ID':11, #Parameters relating to duration of infection period, including ID period
-          'av_D_duration':200/7,
-          'min_D':10.1/7, #Parameters relating to duration of disease period
-          'dis_red':0.3,
-          'v_1':1,
-          'v_2':2.6,
-          'phi':1.4,
-          'epsilon':0.5,#Parameters relating to lambda function- calculating force of infection
-          #Parameters relating to MDA
-          'MDA_Cov':0.8,
-          'MDA_Eff': 0.85, # Efficacy of treatment
-          'rho':0.3,
-          'nweeks_year':52,
-          'babiesMaxAge':0.5, #Note this is years, need to check it converts to weeks later
-          'youngChildMaxAge':9,#Note this is years, need to check it converts to weeks later
-          'olderChildMaxAge':15, #Note this is years, need to check it converts to weeks later
-          'b1':1,#this relates to bacterial load function
-          'ep2':0.114,
-          'n_inf_sev':38,
-          'TestSensitivity': 0.96,
-          'TestSpecificity': 0.965,
-          'SecularTrendIndicator': 0,
-          'SecularTrendYearlyBetaDecrease': 0.01,
-          'vacc_prob_block_transmission':  0.5, 
-          'vacc_reduce_bacterial_load': 0, 
-          'vacc_reduce_duration': 0,
-          'vacc_coverage': 0,  
-          'vacc_waning_length': 52 * 5,
-          'importation_rate': 0.000008,
-          'importation_reduction_rate': (0.9)**(1/10),
-          'infection_risk_shape':6.4, # extra parameter needed for infection risk shape. equivalent to k in STH/sch model.
-                                        #Set to a very high number if you want to assume everyone is the same
-          'min_importation_rate':  1/(20 * 52 * 2500), # some small number for the minimum importation rate. Can be 0 if you want
-          'importation_reduction_length' : 25} # time in weeks after performing an MDA which we wait before reducing the importation rate
+parameters = {
+    "N": 2500,
+    "av_I_duration": 2,
+    "av_ID_duration": 300 / 7,
+    "inf_red": 0.45,
+    "min_ID": 11,  # Parameters relating to duration of infection period, including ID period
+    "av_D_duration": 200 / 7,
+    "min_D": 10.1 / 7,  # Parameters relating to duration of disease period
+    "dis_red": 0.3,
+    "v_1": 1,
+    "v_2": 2.6,
+    "phi": 1.4,
+    "epsilon": 0.5,  # Parameters relating to lambda function- calculating force of infection
+    # Parameters relating to MDA
+    "MDA_Cov": 0.8,
+    "MDA_Eff": 0.85,  # Efficacy of treatment
+    "rho": 0.3,
+    "nweeks_year": 52,
+    "babiesMaxAge": 0.5,  # Note this is years, need to check it converts to weeks later
+    "youngChildMaxAge": 9,  # Note this is years, need to check it converts to weeks later
+    "olderChildMaxAge": 15,  # Note this is years, need to check it converts to weeks later
+    "b1": 1,  # this relates to bacterial load function
+    "ep2": 0.114,
+    "n_inf_sev": 38,
+    "TestSensitivity": 0.96,
+    "TestSpecificity": 0.965,
+    "SecularTrendIndicator": 0,
+    "SecularTrendYearlyBetaDecrease": 0.01,
+    "vacc_prob_block_transmission": 0.5,
+    "vacc_reduce_bacterial_load": 0,
+    "vacc_reduce_duration": 0,
+    "vacc_coverage": 0,
+    "vacc_waning_length": 52 * 5,
+    "importation_rate": 0.000008,
+    "importation_reduction_rate": (0.9) ** (1 / 10),
+    "infection_risk_shape": 6.4,  # extra parameter needed for infection risk shape. equivalent to k in STH/sch model.
+    # Set to a very high number if you want to assume everyone is the same
+    "min_importation_rate": 1
+    / (
+        20 * 52 * 2500
+    ),  # some small number for the minimum importation rate. Can be 0 if you want
+    "importation_reduction_length": 25,
+}  # time in weeks after performing an MDA which we wait before reducing the importation rate
 
 
-sim_params = {'timesim':(52*100)-1,
-              'burnin': (52*70)-1,
-              'N_MDA': 0} # Set by main script later
+sim_params = {
+    "timesim": (52 * 100) - 1,
+    "burnin": (52 * 70) - 1,
+    "N_MDA": 0,
+}  # Set by main script later
 
 
-demog = {'tau': 0.0004807692, 
-         'max_age': 3120,
-         'mean_age': 1040}
-
+demog = {"tau": 0.0004807692, "max_age": 3120, "mean_age": 1040}
 
 
 START_DATE = date(1996, 1, 1)
 
-#id = os.getenv("SLURM_ARRAY_TASK_ID")
+# id = os.getenv("SLURM_ARRAY_TASK_ID")
 # for testing
 
-#mda_filepath = 'endgame_inputs/InputMDA_MTP_' + str(id) + '.csv'
-#mda_filepath = 'endgame_inputs/InputMDA_MTP_' + str(id) + '.csv'
+# mda_filepath = 'endgame_inputs/InputMDA_MTP_' + str(id) + '.csv'
+# mda_filepath = 'endgame_inputs/InputMDA_MTP_' + str(id) + '.csv'
 
 
-'''
+"""
     functions from amis file to set up the simulations
-'''
+"""
+
 
 def set_start_date(datestr: str):
     global START_DATE
     try:
         START_DATE = date.fromisoformat(datestr)
     except ValueError as e:
-        msg = (
-            f"{e}.\n"
-            "Valid dates formats are YYYY-MM-DD, YYYYMMDD or YYYY-WXX-D."
-        )
+        msg = f"{e}.\n" "Valid dates formats are YYYY-MM-DD, YYYYMMDD or YYYY-WXX-D."
         raise ValueError(msg)
 
 
@@ -126,7 +128,14 @@ def setup():
 
 
 def create_initial_population(initial_prevalence: float, MDAData, distToUse="Expo"):
-    vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state(), distToUse=distToUse)
+    vals = Set_inits(
+        parameters,
+        demog,
+        sim_params,
+        MDAData,
+        np.random.get_state(),
+        distToUse=distToUse,
+    )
     ids = np.random.choice(
         range(parameters["N"]), int(initial_prevalence * parameters["N"]), replace=False
     )
@@ -137,13 +146,13 @@ def create_initial_population(initial_prevalence: float, MDAData, distToUse="Exp
 
 
 def alterMDACoverage(MDAData, coverage):
-    """ update the coverage of each MDA for a run to be a given value.
+    """update the coverage of each MDA for a run to be a given value.
     Parameters
     ----------
     MDAData
-        A list of MDA's to be done with date and coverage of the MDA included. 
+        A list of MDA's to be done with date and coverage of the MDA included.
         The coverage is given by the 4th value within each MDA of MDAData so we update the [3] position.
-    coverage    
+    coverage
         The new coverage level for each MDA
     Returns
     -------
@@ -155,106 +164,129 @@ def alterMDACoverage(MDAData, coverage):
     return MDAData
 
 
-'''
+"""
     function to generate the NTDMC results from the simulations
-'''
-def getResultsNTDMC(results, Start_date, burnin):
-    '''
-    Function to collate results for NTDMC
-    '''
+"""
 
-    
+
+def getResultsNTDMC(results, Start_date, burnin):
+    """
+    Function to collate results for NTDMC
+    """
+
     for i in range(len(results)):
         d = copy.deepcopy(results[i][0])
-        prevs = np.array(d['True_Prev_Disease_children_1_9']) 
-        start = burnin # get prevalence from the end of the burnin onwards
-        step = 52 # step forward 52 weeks
-        chosenPrevs = prevs[start::step] 
+        prevs = np.array(d["True_Prev_Disease_children_1_9"])
+        start = burnin  # get prevalence from the end of the burnin onwards
+        step = 52  # step forward 52 weeks
+        chosenPrevs = prevs[start::step]
         if i == 0:
-           df = pd.DataFrame(0, range(len(chosenPrevs)), columns= range(len(results)+4))
-           df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
-           df.iloc[:, 0] = range(Start_date.year, Start_date.year + len(chosenPrevs))
-           df.iloc[:, 1] = np.repeat(1, len(chosenPrevs))
-           df.iloc[:, 2] = np.repeat(9, len(chosenPrevs))
-           df.iloc[:, 3] = np.repeat("prevalence", len(chosenPrevs))
-        df.iloc[:,i+4] = chosenPrevs
+            df = pd.DataFrame(
+                0, range(len(chosenPrevs)), columns=range(len(results) + 4)
+            )
+            df = df.rename(
+                columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}
+            )
+            df.iloc[:, 0] = range(Start_date.year, Start_date.year + len(chosenPrevs))
+            df.iloc[:, 1] = np.repeat(1, len(chosenPrevs))
+            df.iloc[:, 2] = np.repeat(9, len(chosenPrevs))
+            df.iloc[:, 3] = np.repeat("prevalence", len(chosenPrevs))
+        df.iloc[:, i + 4] = chosenPrevs
     for i in range(len(results)):
-        df = df.rename(columns={i+4: "draw_"+ str(i)}) 
+        df = df.rename(columns={i + 4: "draw_" + str(i)})
     return df
 
-'''
+
+"""
     Define names of files and other information for the runs. 
     This is the section which needs the most editing for each IU
-'''
+"""
 
-pathCountry = '../Maps/table_iu_idx_trachoma.csv' # some path here
+pathCountry = "../Maps/table_iu_idx_trachoma.csv"  # some path here
 df_IU_country = pd.read_csv(pathCountry)
-iu = df_IU_country['IU_ID'].values[int(IU_SLURM)]
-country = df_IU_country['country'].values[int(IU_SLURM)]
-    
+iu = df_IU_country["IU_ID"].values[int(IU_SLURM)]
+country = df_IU_country["country"].values[int(IU_SLURM)]
+# get the year that the importation should stop from the IU data (assuming the column is called 'stop_importation_year')
+Stop_importation_year = df_IU_country["stop_importation_year"].values[int(IU_SLURM)]
+
 print(country)
 print(str(iu).zfill(5))
 
 
-''' 
+""" 
     change to be whatever the scenario we are running is
-'''
+"""
 
 print("Making projections for trachoma for IU " + str(iu).zfill(5) + "...")
-mda_filepath = 'endgame_inputs/InputMDA_MTP_projections_' + str(iu) + '.csv'
+mda_filepath = "endgame_inputs/InputMDA_MTP_projections_" + str(iu) + ".csv"
 
 
-'''
+"""
     file name for IU specific parameters
-'''
-#ParamFilePath = '~/Documents/trachoma/post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_' + str(iu) + '.csv'
-ParamFilePath = f'projections/{species}/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/InputBeta_{species_prefix}{country}' + str(iu).zfill(5) + '.csv'
+"""
+# ParamFilePath = '~/Documents/trachoma/post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_' + str(iu) + '.csv'
+ParamFilePath = (
+    f"projections/{species}/"
+    + str(folder_id)
+    + f"/{country}/{country}"
+    + str(iu).zfill(5)
+    + f"/InputBeta_{species_prefix}{country}"
+    + str(iu).zfill(5)
+    + ".csv"
+)
 print(ParamFilePath)
 amisparams = pd.read_csv(ParamFilePath)
-amisparams.columns = [s.replace(' ', '') for s in amisparams.columns]
+amisparams.columns = [s.replace(" ", "") for s in amisparams.columns]
 
 # define the lists of random seeds, R0 and k
 seeds = amisparams.iloc[:, 0].tolist()
-seeds=list(map(int, seeds))
-betas = amisparams.iloc[:, 1:(int((sim_params['timesim'])/52)+1)].to_numpy()
-coverages = amisparams.iloc[:,-2].tolist()
-k_parameter = amisparams.iloc[:,-1].tolist()
+seeds = list(map(int, seeds))
+betas = amisparams.iloc[:, 1 : (int((sim_params["timesim"]) / 52) + 1)].to_numpy()
+coverages = amisparams.iloc[:, -2].tolist()
+k_parameter = amisparams.iloc[:, -1].tolist()
 
-'''
+"""
     numSims should be set to 200
-'''
+"""
 numSims = 200
 
-'''
+"""
     additional functions to run the simulations
-'''
+"""
 
 (
-        parameters,
-        sim_params,
-        demog,
-        MDA_times,
-        MDAData,
-        vacc_times,
-        VaccData,
-    ) = setup()
+    parameters,
+    sim_params,
+    demog,
+    MDA_times,
+    MDAData,
+    vacc_times,
+    VaccData,
+) = setup()
 
 
 paramsToAlter = copy.deepcopy(parameters)
 
 
 outputTimes = get_Intervention_times(
-    getOutputTimes(range(1996,2022)),
+    getOutputTimes(range(1996, 2022)),
     START_DATE,
-    sim_params['burnin'],
+    sim_params["burnin"],
 )
 
-def do_single_run(seed, beta, coverage, k_parameter, i):
+# convert the calendar year that the importation should stop to a simulation time
+Stop_importation_date = getOutputTimes([Stop_importation_year])
+timeToStopImportation = get_Intervention_times(
+    Stop_importation_date, START_DATE, sim_params["burnin"]
+)[0]
+
+
+def do_single_run(seed, beta, coverage, k_parameter, i, timeToStopImportation):
     np.random.seed(seed)
     altered_mda_coverage = alterMDACoverage(MDAData, coverage)
     init_vals = create_initial_population(initial_infect_frac, altered_mda_coverage)
     random_state = np.random.get_state()
-    parameters['infection_risk_shape'] = k_parameter
+    parameters["infection_risk_shape"] = k_parameter
     return run_single_simulation(
         pickleData=copy.deepcopy(init_vals),
         params=parameters,
@@ -271,63 +303,85 @@ def do_single_run(seed, beta, coverage, k_parameter, i):
         numpy_state=random_state,
         doIHMEOutput=False,
         doSurvey=False,
-        distToUse = distToUse,
-        postMDAImportationReduction = True
+        distToUse=distToUse,
+        postMDAImportationReduction=True,
+        timeToStopImportation=timeToStopImportation,
     )
 
+
 results = Parallel(n_jobs=num_cores)(
-        delayed(do_single_run)(seeds[i], betas[i,:], coverages[i], k_parameter[i], i) for i in range(numSims)
-         )
+    delayed(do_single_run)(
+        seeds[i], betas[i, :], coverages[i], k_parameter[i], i, timeToStopImportation
+    )
+    for i in range(numSims)
+)
 
-simData=[item[0] for item in results]
+simData = [item[0] for item in results]
 
-'''
+"""
     Make pickle files and NTDMC data outputs
-'''
+"""
 
 # want outputs like <ascaris-folder>/AGO/AGO02049/Asc_AGO02049.p
-newOutputSimDataFilePath = f'projections/trachoma/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/{species_prefix}{country}' + str(iu).zfill(5) + '.p'
-#newOutputSimDataFilePath = "pickleETC.p"
+newOutputSimDataFilePath = (
+    f"projections/trachoma/"
+    + str(folder_id)
+    + f"/{country}/{country}"
+    + str(iu).zfill(5)
+    + f"/{species_prefix}{country}"
+    + str(iu).zfill(5)
+    + ".p"
+)
+# newOutputSimDataFilePath = "pickleETC.p"
 
 # only save subset of data
-subset_keys = ["IndI",
-        "IndD",
-        "No_Inf",
-        "T_latent",
-        "T_ID",
-        "T_D",
-        "Ind_latent",
-        "Ind_ID_period_base",
-        "Ind_D_period_base",
-        "bact_load",
-        "Age",
-        "vaccinated",
-        "time_since_vaccinated",
-        "treatProbability",
-        "MDA_coverage",
-        "systematic_non_compliance",
-        "ids"]
+subset_keys = [
+    "IndI",
+    "IndD",
+    "No_Inf",
+    "T_latent",
+    "T_ID",
+    "T_D",
+    "Ind_latent",
+    "Ind_ID_period_base",
+    "Ind_D_period_base",
+    "bact_load",
+    "Age",
+    "vaccinated",
+    "time_since_vaccinated",
+    "treatProbability",
+    "MDA_coverage",
+    "systematic_non_compliance",
+    "ids",
+]
 
 subset_sim_data = [{key: d[key] for key in subset_keys if key in d} for d in simData]
 
 print("Pickle file name:")
 print(newOutputSimDataFilePath)
-pickle.dump( subset_sim_data, open( newOutputSimDataFilePath, 'wb' ) )
+pickle.dump(subset_sim_data, open(newOutputSimDataFilePath, "wb"))
 
 
-NTDMC =  getResultsNTDMC(results, START_DATE, sim_params["burnin"])
+NTDMC = getResultsNTDMC(results, START_DATE, sim_params["burnin"])
 
-PrevDatasetFilePath = f'projections/trachoma/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/PrevDataset_{species_prefix}{country}' + str(iu).zfill(5) + '.csv'
-#PrevDatasetFilePath = "NTDMCETC.csv"
+PrevDatasetFilePath = (
+    f"projections/trachoma/"
+    + str(folder_id)
+    + f"/{country}/{country}"
+    + str(iu).zfill(5)
+    + f"/PrevDataset_{species_prefix}{country}"
+    + str(iu).zfill(5)
+    + ".csv"
+)
+# PrevDatasetFilePath = "NTDMCETC.csv"
 print("PrevDataset_species_iu.csv file name:")
 print(PrevDatasetFilePath)
 NTDMC.to_csv(PrevDatasetFilePath, index=False)
 
-print('Finished projections for ' + str(species) + ' in IU ' + str(iu) + ".")
+print("Finished projections for " + str(species) + " in IU " + str(iu) + ".")
 
 #################################################################################################################
 
 end = time.time()
-elapsed_time = end-start
-print("elapsed time in seconds: " + str(elapsed_time) )
-
+elapsed_time = end - start
+print("elapsed time in seconds: " + str(elapsed_time))
