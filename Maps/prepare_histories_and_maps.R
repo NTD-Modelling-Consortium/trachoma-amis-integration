@@ -152,63 +152,6 @@ trachoma_all = data.frame(IU_ID = rep(ius_vector,each=length(years_vector)),
   left_join(iu_task_lookup) %>%
   left_join(new_surveys_completed %>% select(IU_ID,Year,max_tf_prev_upr))
 
-#### calculate country level reduction in prevalence for the reduction to importation rate
-# find min and max year for each IU
-country_id_lookup = new_surveys_completed %>% 
-  group_by(IU_ID,ADMIN0ISO2) %>%
-  summarise(min_year = min(Year),
-            max_year = max(Year)) 
-
-# calculate median prevalence at each year for each country
-prev_all = new_surveys_completed %>%
-  group_by(ADMIN0ISO2,Year) %>%
-  summarise(median=median(max_tf_prev_upr,na.rm=T))
-
-# overall max and min prevalence
-overall_first_year_prev = as.numeric(new_surveys_completed %>%
-  ungroup() %>%
-  filter(Year <= 2006) %>%
-  summarise(median = median(max_tf_prev_upr)))
-
-overall_last_year_prev = as.numeric(new_surveys_completed %>%
-                                       ungroup() %>%
-                                       filter(Year == 2021) %>%
-                                       summarise(median = median(max_tf_prev_upr)))
-
-# find maximum (median) country level prevalence 
-max_prev_year_all = prev_all %>%
-  group_by(ADMIN0ISO2) %>%
-  summarise(max_prev = max(median,na.rm=T),
-            min_year = min(Year),
-            max_year = max(Year))
-
-# find year at which max_prev occurred
-unique_countries = unique(country_id_lookup$ADMIN0ISO2)
-yearly_prev_drops_all = as.data.frame(t(sapply(1:length(unique_countries), function(i){
-  
-  prev_country = prev_all %>%
-    filter(ADMIN0ISO2==unique_countries[i])
-  
-  max_prev = as.numeric(max_prev_year_all %>% filter(ADMIN0ISO2==unique_countries[i]) %>% select(max_prev))
-  max_prev_year = prev_country$Year[min(which(prev_country$median == max_prev))]
-
-  # calculate number of years between max year and last year
-  last_year = as.numeric(max_prev_year_all %>% 
-                           filter(ADMIN0ISO2==unique_countries[i]) %>%
-                           select(max_year))
-  last_prev = as.numeric(prev_country %>%
-                                ungroup() %>%
-                                filter(Year==last_year) %>%
-                                select(median))
-  if(last_year<= max_prev_year){
-    yearly_prev_drop =(overall_first_year_prev-overall_last_year_prev) /(2021-1996)
-  } else {
-    yearly_prev_drop = (last_prev-max_prev)/(last_year-max_prev_year)
-  }
-  return(c(country=unique_countries[i],drop=yearly_prev_drop))
-})))
-yearly_prev_drops_all$drop = as.numeric(yearly_prev_drops_all$drop)
-
 # save maps
 trachoma_maps = lapply(years_vector, function(year){
   list(

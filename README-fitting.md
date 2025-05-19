@@ -64,6 +64,7 @@ show shell scripts because of this.
 
 - Note that there is sometimes a maximum number of tasks that can be submitted at a time on HPC clusters (on the Warwick cluster it is 2000, I didn't reach the limit on the Oxford cluster). 
 
+- Keep note of which IUs had ESS < 200 so that they can be excluded from the future projections (scenarios to 2040 run by Igor)
 
 | R/Python script  (see `trachoma-amis-integration/` repo)    | Corresponding shell script    |
 |:------------------------------------------------------------|:------------------------------|

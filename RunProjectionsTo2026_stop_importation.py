@@ -210,7 +210,7 @@ mda_filepath = 'endgame_inputs/InputMDA_MTP_projections_' + str(iu) + '.csv'
     file name for IU specific parameters
 '''
 #ParamFilePath = '~/Documents/trachoma/post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_' + str(iu) + '.csv'
-ParamFilePath = f'projections/{species}/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/InputBeta_{species_prefix}{country}' + str(iu).zfill(5) + '.csv'
+ParamFilePath = f'projections/{species}/' + str(folder_id) + f'/{country}/{country}' + str(iu).zfill(5) + f'/InputBet_{country}' + str(iu).zfill(5) + '.csv'
 print(ParamFilePath)
 amisparams = pd.read_csv(ParamFilePath)
 amisparams.columns = [s.replace(' ', '') for s in amisparams.columns]
