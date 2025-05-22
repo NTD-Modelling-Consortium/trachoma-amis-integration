@@ -136,7 +136,7 @@ table_iu_idx <- trachoma_maps[[1]]$data[, c("IU_ID", "TaskID")]
 colnames(table_iu_idx) <- c("IU_ID", "TaskID")
 rownames(table_iu_idx) <- NULL
 
-df <- read_sf(dsn = "../ESPEN_IU_2021/", layer = "ESPEN_IU_2021") %>%
+df <- read_sf(dsn = file.path(kPathToWorkingDir, "ESPEN_IU_2021"), layer = "ESPEN_IU_2021") %>%
   filter(IU_ID %in% table_iu_idx$IU_ID)
 df <- st_drop_geometry(df[, c("IU_ID", "ADMIN0ISO3")])
 head(df)

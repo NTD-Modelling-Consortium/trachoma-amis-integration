@@ -31,7 +31,7 @@ n_timschange <- length(yearschange_index)
 
 kSpeciesAll <- c("trachoma")
 
-create_directory_structure <- function(countries, species_list) {
+create_directory_structure <- function(countries, folder_id, species_list) {
   kPathToModelProjections <- file.path(kPathToModel, "projections")
 
   for (s in species_list) {
@@ -171,7 +171,7 @@ failed_ids <- if (!is.null(opts$failed_ids)) {
 df_iu_country <- read.csv(file.path(kPathToMaps, "table_iu_idx_trachoma.csv"))
 countries <- sort(unique(df_iu_country$country))
 
-create_directory_structure(countries, kSpeciesAll)
+create_directory_structure(countries, opts$folder_id, kSpeciesAll)
 
 if (!is.null(opts$id)) {
   # Process single ID

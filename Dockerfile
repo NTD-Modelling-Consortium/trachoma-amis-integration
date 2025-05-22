@@ -27,6 +27,8 @@ RUN apt update && apt install -y \
 RUN conda config --add channels conda-forge --add channels defaults --add channels r
 RUN conda install --yes --name base \
         python=3.10 \
+        pandas \
+        joblib \
         r-base \
         r-reticulate \
         r-truncnorm \
