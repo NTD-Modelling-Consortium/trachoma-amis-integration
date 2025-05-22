@@ -6,14 +6,15 @@ setwd("../")
 load("Maps/trachoma_maps.rds")
 load("Maps/trachoma_map_years.rds")
 
-# from Igor's runs
-#failed_ids = c(123,150,170,196,203,296,315,369,371,373,376,377,379,380,495,502,515,528,530,531,532,533,535,539,541)
-# from Raiha's runs
-#failed_ids = c(123,150,196,203,205,296,315,369,370,371,373,376,379,380,495,502,515,528,530,531,532,533,535,539,541)
 
 failed_ids = c() # this needs to be updated once we know which batches failed
 ctd_ids = c()
 
+# Early Feb: second runs
+# from Igor's runs
+#failed_ids = c(123,150,170,196,203,296,315,369,371,373,376,377,379,380,495,502,515,528,530,531,532,533,535,539,541)
+# from Raiha's runs
+#failed_ids = c(123,150,196,203,205,296,315,369,370,371,373,376,379,380,495,502,515,528,530,531,532,533,535,539,541)
 # 30 Jan:  from previous runs
 #failed_ids = c(29, # fitting didn't work properly
 #	       133,134, # randomly stopped?
@@ -28,36 +29,19 @@ id_vec = setdiff(1:max(iu_task_lookup$TaskID),c(failed_ids))
 M_l <- 200 # just to simulate from normal to run vioplots
 species="trachoma"
 
-# load(paste0("../../trajectories/trajectories_",1,"_",species,".Rdata")) # load 'trajectories' of batch 1
-# total_num_years <- ncol(trajectories)
-# num_sampled_traj <- 500
-# 
-# year_indices <-  c(18L,29L,38L) # 2002, 2013, 2022 
-# 
-# map_years <- c(2002, 2013, 2022)  # years in the map samples amis fitted to
-# all_years <- 2002:2022
-
 InputPars_MTP_path_above <- paste0("post_AMIS_analysis/InputPars_MTP_",species,"/")
 if (!dir.exists(InputPars_MTP_path_above)) {dir.create(InputPars_MTP_path_above)}
 
-#sampled_params_all = c()
+sampled_params_all = c()
 for(id in id_vec){
   
   #### Load AMIS output
-  if(!id %in% ctd_ids){
-    load(paste0("AMIS_output/amis_output",id,".Rdata")) # loads amis_output
-    
-  } else {
-    load(paste0("AMIS_output_ctd/amis_output",id,".Rdata")) # loads amis_output
-  }
+  load(paste0("AMIS_output/amis_output",id,".Rdata")) # loads amis_output
   
-  #iu_names <- as.character(unique(iu_task_lookup_updated$IU_ID[iu_task_lookup_updated$TaskID==id]))
   iu_names <- rownames(amis_output$prevalence_map[[1]]$data)
   ess = amis_output$ess
   #### Sample draws from the posterior
   num_sub_samples_posterior <- 200
-  # InputPars_MTP_path <- paste0("../InputPars_MTP/InputPars_MTP_batch_",id,"/"
-  # if (!dir.exists(InputPars_MTP_path)) {dir.create(InputPars_MTP_path)}
   
   for (iu in iu_names) {
     if(ess[which(iu_names==iu)] >= 200){
@@ -67,8 +51,8 @@ for(id in id_vec){
       file_name <- paste0(InputPars_MTP_path_above, paste0("InputPars_MTP_",iu,".csv"))
       write.csv(sampled_params, file=file_name, row.names = F)
       
-      # sampled_params_iu = cbind(IU_ID=iu,sampled_params)
-      # sampled_params_all = rbind(sampled_params_all,sampled_params_iu)
+      sampled_params_iu = cbind(IU_ID=iu,sampled_params)
+      sampled_params_all = rbind(sampled_params_all,sampled_params_iu)
       
       
     }
@@ -78,7 +62,7 @@ for(id in id_vec){
   
 }
 
-#save(sampled_params_all,file= paste0(InputPars_MTP_path_above,"InputPars_MTP_allIUs.rds"))
-#load(paste0(InputPars_MTP_path_above,"InputPars_MTP_allIUs.rds"))
+save(sampled_params_all,file= paste0(InputPars_MTP_path_above,"InputPars_MTP_allIUs.rds"))
 
 
+cat(paste0("Produced posterior parameter samples \n"))

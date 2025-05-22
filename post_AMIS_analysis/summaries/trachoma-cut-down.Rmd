@@ -1,0 +1,1438 @@
+---
+title: "trachoma-cut-down"
+output: html_document
+date: "`r Sys.Date()`"
+---
+---
+title: "Trachoma Summaries"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+set.seed(200)
+library(knitr)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(gridExtra)
+library(patchwork)
+
+setwd("~/Documents/trachoma-endgame")
+load("sampled_params_all.Rdata")
+load("Maps/trachoma_espen_data.Rdata")
+load("Maps/trachoma_data.Rdata")
+
+
+#num MDA rounds
+num_mda_rounds = trachoma_data %>%
+  mutate(IU_ID = as.character(IU_ID)) %>%
+  group_by(IU_ID) %>%
+  filter(PC_in_group > 0) %>%
+  tally()
+
+
+#### numerical summaries of failed surveys
+sampled_params_all_mutated = sampled_params_all %>%
+  left_join(num_mda_rounds) %>%
+  mutate(mda_rounds = ifelse(is.na(n),0,n)) %>%
+  mutate(eff_mda_rounds = eff_cov * mda_rounds,
+         beta1996 = beta_init,
+         beta2000 = beta_init*beta75,
+         beta2010 = beta_init*beta75*beta85,
+         beta2020 = beta_init*beta75*beta85*beta95) %>%
+  mutate(reduction2000 = (beta2000-beta1996)/beta1996,
+         reduction2010 = (beta2010-beta1996)/beta1996,
+         reduction2020 = (beta2020-beta1996)/beta1996) 
+
+#first maps
+first_map = trachoma_data %>%
+  arrange(IU_ID,Year) %>%
+  group_by(IU_ID) %>%
+  mutate(IU_ID = as.character(IU_ID)) %>%
+  mutate(max_survey_n_clean = ifelse(is.na(max_survey_n),-1,max_survey_n),) %>%
+  mutate(new_data = (!(max_survey_n_clean == lag(max_survey_n_clean))) | (Year==1996 & max_survey_n==0)) %>%
+  filter(new_data == TRUE) %>%
+  summarise(first_data_point = min(Year)) 
+
+
+sampled_params_all_summary = sampled_params_all_mutated %>%
+  group_by(IU_ID) %>%
+  summarise(median_beta1996 = median(beta1996),
+            median_beta2000 = median(beta2000),
+            median_beta2010 = median(beta2010),
+            median_beta2020 = median(beta2020),
+            median_reduction2000 = median(reduction2000),
+            median_reduction2010 = median(reduction2010),
+            median_reduction2020 = median(reduction2020),
+            median_eff_cov = median(eff_cov),
+            median_eff_mda_rounds = median(eff_mda_rounds),
+            lwrquant_beta1996 = quantile(beta1996,probs=0.025),
+            lwrquant_beta2000 = quantile(beta2000,probs=0.025),
+            lwrquant_beta2010 = quantile(beta2010,probs=0.025),
+            lwrquant_beta2020 = quantile(beta2020,probs=0.025),
+            lwrquant_reduction2000 = quantile(reduction2000,probs=0.025),
+            lwrquant_reduction2010 = quantile(reduction2010,probs=0.025),
+            lwrquant_reduction2020 = quantile(reduction2020,probs=0.025),
+            lwrquant_eff_cov = quantile(eff_cov,probs=0.025),
+            lwrquant_eff_mda_rounds = quantile(eff_mda_rounds,probs=0.025),
+            uprquant_beta1996 = quantile(beta1996,probs=0.975),
+            uprquant_beta2000 = quantile(beta2000,probs=0.975),
+            uprquant_beta2010 = quantile(beta2010,probs=0.975),
+            uprquant_beta2020 = quantile(beta2020,probs=0.975),
+            uprquant_reduction2000 = quantile(reduction2000,probs=0.975),
+            uprquant_reduction2010 = quantile(reduction2010,probs=0.975),
+            uprquant_reduction2020 = quantile(reduction2020,probs=0.975),
+            uprquant_eff_cov = quantile(eff_cov,probs=0.975),
+            uprquant_eff_mda_rounds = quantile(eff_mda_rounds,probs=0.975)) %>%  
+  ungroup() %>%
+  left_join(first_map) %>%
+  mutate(median_beta2000 = ifelse(first_data_point >2000, NA, median_beta2000),
+            median_beta2010 = ifelse(first_data_point >2010, NA, median_beta2010),
+            median_beta2020 = ifelse(first_data_point >2020, NA, median_beta2020),
+            median_reduction2000 = ifelse(first_data_point >2000, NA, median_reduction2000),
+            median_reduction2010 = ifelse(first_data_point >2010, NA, median_reduction2010),
+            median_reduction2020 = ifelse(first_data_point >2020, NA, median_reduction2020),
+            lwrquant_beta2000 = ifelse(first_data_point >2000, NA, lwrquant_beta2000),
+            lwrquant_beta2010 = ifelse(first_data_point >2010, NA, lwrquant_beta2010),
+            lwrquant_beta2020 = ifelse(first_data_point >2020, NA, lwrquant_beta2020),
+            lwrquant_reduction2000 = ifelse(first_data_point >2000, NA, lwrquant_reduction2000),
+            lwrquant_reduction2010 = ifelse(first_data_point >2010, NA, lwrquant_reduction2010),
+            lwrquant_reduction2020 = ifelse(first_data_point >2020, NA, lwrquant_reduction2020),
+            uprquant_beta2000 = ifelse(first_data_point >2000, NA, uprquant_beta2000),
+            uprquant_beta2010 = ifelse(first_data_point >2010, NA, uprquant_beta2010),
+            uprquant_beta2020 = ifelse(first_data_point >2020, NA, uprquant_beta2020),
+            uprquant_reduction2000 = ifelse(first_data_point >2000, NA, uprquant_reduction2000),
+            uprquant_reduction2010 = ifelse(first_data_point >2010, NA, uprquant_reduction2010),
+            uprquant_reduction2020 = ifelse(first_data_point >2020, NA, uprquant_reduction2020))
+
+# can replace this when redoing trachoma
+surveys = trachoma_espen_data %>%
+  group_by(IU_ID) %>%
+  mutate(survey_n_clean = ifelse(is.na(survey_n),-1,survey_n)) %>%
+  mutate(survey_change = ifelse((survey_n_clean == lag(survey_n_clean) & !(type_prevalence == lag(type_prevalence))),1,0)) %>%
+  mutate(survey_change = ifelse(is.na(survey_change),0,survey_change)) %>%
+  mutate(type_prevalence_num = case_when(
+    type_prevalence == "baseline" ~ 0,
+    type_prevalence == "impact" ~ 1,
+    type_prevalence == "surveillance" ~ 2
+  )) %>% 
+  ungroup() %>%
+  group_by(IU_ID, Year, ADMIN0ISO2) %>%
+  summarise(max_tf_prev_upr = ifelse(length(which(!is.na(tf_prev_upr)))>0,max(tf_prev_upr, na.rm=T),NA),
+            max_survey_n = ifelse(length(which(!is.na(tf_prev_upr)))>0,max(survey_n, na.rm=T),NA),
+            max_survey_change = ifelse(length(which(!is.na(tf_prev_upr)))>0,max(survey_change, na.rm=T),NA),
+            PC_in_group = max(PC),
+            max_type_prevalence_num = ifelse(length(which(!is.na(tf_prev_upr)))>0,max(type_prevalence_num,na.rm=T),NA)) %>%
+  ungroup() %>% 
+  arrange(IU_ID,Year) %>%
+  group_by(IU_ID) %>%
+  mutate(max_survey_n_clean = ifelse(is.na(max_survey_n),-1,max_survey_n)) %>%
+  mutate(new_data = (!(max_survey_n_clean == lag(max_survey_n_clean))) | (Year==1996 & max_survey_n==0) | max_survey_change == 1) %>%
+  filter(new_data == TRUE)
+
+# baseline + latest prev (ESPEN)
+baseline_tf = surveys %>%
+  group_by(IU_ID,ADMIN0ISO2) %>%
+  filter(max_type_prevalence_num == 0) %>%
+  summarise(baseline_tf_max = factor(max(max_tf_prev_upr), levels=c("0.05",  "0.099", "0.299", "0.499", "1"))) %>%
+  mutate(IU_ID = as.character(IU_ID),
+         ADMIN0ISO2 = factor(ADMIN0ISO2, levels=unique(surveys$ADMIN0ISO2)))
+
+last_year_and_num_surveys = surveys %>%
+  group_by(IU_ID,ADMIN0ISO2) %>%
+  summarise(last_year = max(Year),
+            num_surveys = n())
+
+latest_tf = surveys %>%
+  left_join(last_year_and_num_surveys) %>%
+  filter(Year==last_year) %>%
+  group_by(IU_ID,ADMIN0ISO2,num_surveys) %>%
+  mutate(last_max_tf_prev_upr = factor(max_tf_prev_upr, levels=c("0.05",  "0.099", "0.299", "0.499", "1")),
+         IU_ID = as.character(IU_ID),
+         ADMIN0ISO2 = factor(ADMIN0ISO2, levels=unique(surveys$ADMIN0ISO2)), 
+         last_year=factor(last_year)) %>%
+  select(IU_ID,last_year,ADMIN0ISO2,last_max_tf_prev_upr,num_surveys)
+
+
+# impact survey failures
+#ius_that_failed_impact_surveys = trachoma_espen_data %>%
+#  filter(type_prevalence %in% c("impact") & !tf_prev_upr == 0.05)
+ius_that_failed_impact_surveys = surveys %>%
+  filter(max_type_prevalence_num == 1 & !max_tf_prev_upr == 0.05)
+
+sampled_params_failed_impact_summary= sampled_params_all_summary %>%
+  filter(IU_ID %in% ius_that_failed_impact_surveys$IU_ID) %>%
+  group_by(IU_ID) 
+
+# surveillance survey failures
+#ius_that_failed_surveillance_surveys = trachoma_espen_data %>%
+#  filter(type_prevalence %in% c("surveillance") & !tf_prev_upr == 0.05)
+ius_that_failed_surveillance_surveys = surveys %>%
+  filter(max_type_prevalence_num == 2 & !max_tf_prev_upr == 0.05)
+
+sampled_params_failed_surveillance_summary = sampled_params_all_summary %>%
+  filter(IU_ID %in% ius_that_failed_surveillance_surveys$IU_ID) %>%
+  group_by(IU_ID) 
+
+# rebounds
+sampled_params_rebounds_summary = sampled_params_all_summary %>%
+  filter(IU_ID %in% ius_that_failed_surveillance_surveys$IU_ID & (!IU_ID %in% ius_that_failed_impact_surveys$IU_ID))
+
+# persistance 
+# ius_persistent = trachoma_espen_data %>%
+#   group_by(IU_ID,Geoconnect_ID) %>%
+#   summarise(min_tf = ifelse(length(which(!is.na(tf_prev_upr)))>0,min(tf_prev_upr, na.rm=T),NA),
+#             num_impacts_failed = length(which(type_prevalence=="impact" & tf_prev_upr > 0.05))) %>%
+#   ungroup() %>%
+#   filter(min_tf > 0.05 & num_impacts_failed >= 2) 
+ius_persistent = surveys %>%
+  group_by(IU_ID) %>%
+  summarise(min_tf = min(max_tf_prev_upr),
+            num_impacts_failed =  length(which(max_type_prevalence_num==1 & max_tf_prev_upr > 0.05))) %>%
+  ungroup() %>%
+  filter(min_tf > 0.05 & num_impacts_failed >= 2)
+
+# persistent
+sampled_params_persistent_summary = sampled_params_all_summary %>%
+  filter(IU_ID %in% ius_persistent$IU_ID)
+
+# never had impact survey
+high_prev_no_impact = surveys %>%
+  group_by(IU_ID,ADMIN0ISO2) %>%
+  summarise(max_survey_type = max(max_type_prevalence_num),
+            min_tf_prev = min(max_tf_prev_upr)) %>%
+  filter(max_survey_type == 0 & min_tf_prev>0.05) %>%
+  mutate(IU_ID = as.character(IU_ID)) 
+  
+sampled_params_highprev_noimpact_summary= sampled_params_all_summary %>%
+  filter(IU_ID %in% high_prev_no_impact$IU_ID)
+
+# passed surveys
+sampled_params_passed_summary= sampled_params_all_summary %>%
+  filter(!IU_ID %in% c(ius_that_failed_impact_surveys$IU_ID,ius_that_failed_surveillance_surveys$IU_ID,high_prev_no_impact$IU_ID)) %>%
+  group_by(IU_ID) 
+
+
+# never_below_threshold
+ius_never_below_threshold = surveys %>%
+  group_by(IU_ID,ADMIN0ISO2) %>%
+  summarise(min_tf = min(max_tf_prev_upr)) %>%
+  filter(min_tf > 0.05)
+
+sampled_params_never_below_threshold_summary = sampled_params_all_summary %>%
+  filter(IU_ID %in% ius_never_below_threshold$IU_ID & !IU_ID %in% high_prev_no_impact$IU_ID)
+
+
+# add flags
+summary_with_flags = sampled_params_all_summary %>%
+  mutate(never_reached_impact_flag = ifelse(IU_ID %in% high_prev_no_impact$IU_ID,1,0),
+         failed_impact_flag = ifelse(IU_ID %in% sampled_params_failed_impact_summary$IU_ID,1,0),
+         persistent_flag = ifelse(IU_ID %in% sampled_params_persistent_summary$IU_ID,1,0),
+         failed_surveillance_flag = ifelse(IU_ID %in% sampled_params_failed_surveillance_summary$IU_ID,1,0),
+         rebound_flag = ifelse(IU_ID %in% sampled_params_rebounds_summary$IU_ID,1,0),
+         never_below_threshold_flag = ifelse(IU_ID %in% sampled_params_never_below_threshold_summary$IU_ID,1,0),
+         passed_flag = ifelse(!IU_ID %in% c(high_prev_no_impact$IU_ID,sampled_params_failed_impact_summary$IU_ID, sampled_params_failed_surveillance_summary$IU_ID),1,0),
+         median_beta1996_binned = cut(median_beta1996,breaks=20,ordered_result=T)) %>%
+  left_join(baseline_tf) %>%
+  left_join(latest_tf) %>%
+  mutate(min_tf = factor(baseline_tf_max, levels=unique(baseline_tf$baseline_tf_max)),
+         median_eff_mda_rounds_binned = factor(case_when(
+           median_eff_mda_rounds <= 5 ~ "<=5",
+           median_eff_mda_rounds > 5 & median_eff_mda_rounds <=10 ~ "6-10",
+           median_eff_mda_rounds > 10 ~ "11+",
+         ), levels=c("<=5", "6-10", "11+")),
+         median_eff_cov_binned = factor(case_when(
+           median_eff_cov <= 0.7 ~ "<=0.7",
+           median_eff_cov > 0.7 & median_eff_cov <= 0.8 ~ "0.7-0.8",
+           median_eff_cov > 0.8 ~ "0.8+"
+         ), levels=c("<=0.7","0.7-0.8","0.8+")))
+
+library(randomcoloR)
+palette <- distinctColorPalette(length(unique(baseline_tf$ADMIN0ISO2)))
+
+```
+
+Passed surveys refer to those IUs that didn't fail any impact or surveillance surveys. If no impact or surveillance surveys performed, the minimum TF prevalence was <5%. 
+
+5 categories of "problem" IUs considered throughout (not mutually exclusive):
+
+- High prevalence, only baseline surveys: only had baseline surveys and minimum TF prevalence > 5%
+- Failed impact surveys: failed at least 1 impact survey (TF > 5%)
+- Persistent: failed at least 2 impact, never below 5% TF
+- Failed surveillance surveys: failed at least 1 surveillance survey (TF > 5%)
+- Rebound: passed impact survey but failed surveillance survey
+
+
+# Summarise by category
+
+
+```{r}
+
+# print summaries
+passed_ius_summary = data.frame(
+  c("beta1996","beta2000","beta2010","beta2020","betareduction2000","betareduction2010","betareduction2020","eff_cov","eff_mda_rounds"),
+    matrix(apply(sampled_params_passed_summary[,-c(1,ncol(sampled_params_passed_summary))],2,function(x) mean(x,na.rm=T)),ncol=3)
+  )
+colnames(passed_ius_summary) = c("variable","mean_of_q0.5","mean_of_q0.025","mean_of_q0.975")
+
+# print summaries
+highprev_noimpact_summary = data.frame(
+  c("beta1996","beta2000","beta2010","beta2020","betareduction2000","betareduction2010","betareduction2020","eff_cov","eff_mda_rounds"),
+    matrix(apply(sampled_params_highprev_noimpact_summary[,-c(1,ncol(sampled_params_highprev_noimpact_summary))],2,function(x) mean(x,na.rm=T)),ncol=3)
+  )
+colnames(highprev_noimpact_summary) = c("variable","mean_of_q0.5","mean_of_q0.025","mean_of_q0.975")
+
+failed_impact_summary = data.frame(
+  c("beta1996","beta2000","beta2010","beta2020","betareduction2000","betareduction2010","betareduction2020","eff_cov","eff_mda_rounds"),
+    matrix(apply(sampled_params_failed_impact_summary[,-c(1,ncol(sampled_params_failed_impact_summary))],2,function(x) mean(x,na.rm=T)),ncol=3)
+  )
+colnames(failed_impact_summary) = c("variable","mean_of_q0.5","mean_of_q0.025","mean_of_q0.975")
+
+persistent_summary = data.frame(
+  c("beta1996","beta2000","beta2010","beta2020","betareduction2000","betareduction2010","betareduction2020","eff_cov","eff_mda_rounds"),
+    matrix(apply(sampled_params_persistent_summary[,-c(1,ncol(sampled_params_persistent_summary))],2,function(x) mean(x,na.rm=T)),ncol=3)
+  )
+colnames(persistent_summary) = c("variable","mean_of_q0.5","mean_of_q0.025","mean_of_q0.975")
+#kable(persistent_summary)
+
+failed_surveillance_summary = data.frame(
+  c("beta1996","beta2000","beta2010","beta2020","betareduction2000","betareduction2010","betareduction2020","eff_cov","eff_mda_rounds"),
+    matrix(apply(sampled_params_failed_surveillance_summary[,-c(1,ncol(sampled_params_failed_surveillance_summary))],2,function(x) mean(x,na.rm=T)),ncol=3)
+  )
+colnames(failed_surveillance_summary) = c("variable","mean_of_q0.5","mean_of_q0.025","mean_of_q0.975")
+
+rebounds_summary = data.frame(
+  c("beta1996","beta2000","beta2010","beta2020","betareduction2000","betareduction2010","betareduction2020","eff_cov","eff_mda_rounds"),
+    matrix(apply(sampled_params_rebounds_summary[,-c(1,ncol(sampled_params_rebounds_summary))],2,function(x) mean(x,na.rm=T)),ncol=3)
+  )
+colnames(rebounds_summary) = c("variable","mean_of_q0.5","mean_of_q0.025","mean_of_q0.975")
+
+
+never_below_threshold_summary = data.frame(
+  c("beta1996","beta2000","beta2010","beta2020","betareduction2000","betareduction2010","betareduction2020","eff_cov","eff_mda_rounds"),
+    matrix(apply(sampled_params_never_below_threshold_summary[,-c(1,ncol(sampled_params_never_below_threshold_summary))],2,function(x) mean(x,na.rm=T)),ncol=3)
+  )
+colnames(never_below_threshold_summary) = c("variable","mean_of_q0.5","mean_of_q0.025","mean_of_q0.975")
+
+```
+
+- For each IU, the median, 2.5% and 97.5% quantiles were calculated, then averaged across all IUs in the respective categories
+- Failed impact surveys (including persistent IUs) have higher median beta on average. Not so much for failed surveillance surveys (including rebound IUs)
+- MDA rounds of rebounded IUs (passed impact but failed surveillance) smaller than other "problem" categories
+
+```{r, out.width="100%",message=FALSE,warning=FALSE,fig.height=8}
+summaries_combined = rbind(cbind(group = "1:Passed",passed_ius_summary),
+                           cbind(group = "2:High prev., BL only",highprev_noimpact_summary),
+                           cbind(group = "3:Failed imp.",failed_impact_summary),
+                           cbind(group = "4:Persistent.",persistent_summary),
+                           cbind(group = "5:Failed surv.",failed_surveillance_summary),
+                           cbind(group = "6:Rebounds",rebounds_summary),
+                           cbind(group = "7:Never below threshold.",never_below_threshold_summary))
+
+ggplot(summaries_combined) +
+  geom_point(aes(x=group,y=mean_of_q0.5)) +
+  geom_segment(aes(x=group,y=mean_of_q0.025,yend=mean_of_q0.975))+
+  theme(axis.text.x = element_text(angle = 90, vjust=0.5)) +
+  facet_wrap(~variable,ncol=3,scales="free_y")
+```
+
+
+# Compare baseline TF vs baseline $\beta$
+
+- IUs that never had impact surveys have higher $\beta$
+- Medians of effective coverage quite tight around the mean of the prior distribution for IUs that passed all surveys, but not the case for some of the "problem" categories, particularly at higher prevalence
+
+```{r,message=FALSE,warning=FALSE, out.width="100%",fig.height=10}
+
+countries_group_lookup = summary_with_flags %>%
+  filter(baseline_tf_max == 0.499) %>%
+  group_by(ADMIN0ISO2) %>%
+  summarise(average = mean(median_beta1996)) %>%
+  arrange(average) %>%
+  mutate(group = factor(ifelse(average<0.16,1,2)))
+
+
+p1=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_beta1996, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,0.6)) +
+  labs(colour="Passed flag")+
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs all")
+
+
+p1a=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_reached_impact_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_beta1996, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,0.6)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs BL only, high prev.")+
+  theme(legend.position = "none")
+
+p2=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_impact_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_beta1996, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,0.6)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Failed impact") +
+  theme(legend.position = "none")
+
+p3=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (persistent_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_beta1996, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,0.6)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Persistent") +
+  theme(legend.position = "none")
+
+
+p4=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_surveillance_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_beta1996, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,0.6)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Failed surveillance")+
+  theme(legend.position = "none")
+
+
+p5=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (rebound_flag==1| passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_beta1996, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,0.6)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Rebound") +
+  theme(legend.position = "none")
+
+
+p6=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_below_threshold_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_beta1996, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,0.6)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Never below threshold") +
+  theme(legend.position = "none")
+
+
+
+plot_all = p1 + p1a + p2 +p3 + p4 + p5 +p6
+plot_all + plot_layout(guides = "collect",ncol=2)
+
+passed_summary_with_flags = summary_with_flags %>%
+  filter((!is.na(baseline_tf_max)) &!is.na(ADMIN0ISO2) & passed_flag==1) %>%
+  #mutate(group=ifelse(median_beta1996<0.21,1,2))
+  left_join(countries_group_lookup) %>%
+  mutate(median_reduction2020_binned = ifelse(median_reduction2020>-0.375,"Small reduction","Large reduction"))
+
+
+```
+
+
+# Compare baseline TF vs effective coverage
+
+```{r,message=FALSE,warning=FALSE, out.width="100%",fig.height=10}
+
+
+p1=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_cov, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,1)) +
+  labs(colour="Passed flag")+
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs all")
+
+
+p1a=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_reached_impact_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_cov, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,1)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs BL only, high prev.")+
+  theme(legend.position = "none")
+
+p2=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_impact_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_cov, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,1)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Failed impact") +
+  theme(legend.position = "none")
+
+p3=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (persistent_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_cov, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,1)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Persistent") +
+  theme(legend.position = "none")
+
+
+p4=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_surveillance_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_cov, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,1)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Failed surveillance")+
+  theme(legend.position = "none")
+
+
+p5=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (rebound_flag==1| passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_cov, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,1)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Rebound") +
+  theme(legend.position = "none")
+
+
+p6=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_below_threshold_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_cov, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  ylim(c(0,1)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs never_below_threshold") +
+  theme(legend.position = "none")
+
+plot_all = p1 + p1a + p2 +p3 + p4 + p5 + p6
+plot_all + plot_layout(guides = "collect",ncol=2)
+
+
+```
+
+
+
+- How did IUs with low coverage and high baseline prevalence pass all their surveys? 
+- Answer: high baseline $\beta$ and large reductions in $\beta$ by 2020
+
+
+```{r,message=FALSE,warning=FALSE, out.width="100%"}
+corr_drop_cov = sampled_params_all_mutated %>%
+  group_by(IU_ID) %>%
+  summarise(corr = cor(beta95,eff_cov),
+            median_beta95 = median(beta95),
+            median_eff_cov = median(eff_cov),
+            median_reduction2020 = median(reduction2020)) %>%
+  left_join(summary_with_flags %>% select(IU_ID,passed_flag)) 
+
+
+# raw data 
+ggplot(data=corr_drop_cov, aes(x=median_eff_cov,y=median_beta95, col=factor(passed_flag))) +
+  geom_point(alpha=0.5) + 
+  labs(colour="Passed flag")+
+  xlab("median eff_cov") +
+  ylab("median beta1996") +
+  ggtitle("Median eff_cov vs median baseline beta")
+
+
+ggplot(data=corr_drop_cov, aes(x=median_eff_cov,y=median_reduction2020, col=factor(passed_flag))) +
+  geom_point(alpha=0.5) + 
+  labs(colour="Passed flag")+
+  xlab("median eff_cov") +
+  ylab("median reduction2020") +
+  ggtitle("Median eff_cov vs median reduction2020")
+```
+
+# Compare baseline TF vs effective number of MDA rounds (#rounds $\times$ effective coverage)
+
+```{r,message=FALSE,warning=FALSE, out.width="100%",fig.height=10}
+
+
+p1=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_mda_rounds, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  ylim(c(0,17)) +
+  labs(colour="Passed flag")+
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs all")
+
+
+p1a=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_reached_impact_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_mda_rounds, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  ylim(c(0,17)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs BL only, high prev.")+
+  theme(legend.position = "none")
+
+p2=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_impact_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_mda_rounds, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  ylim(c(0,17)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Failed impact") +
+  theme(legend.position = "none")
+
+p3=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (persistent_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_mda_rounds, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  ylim(c(0,17)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Persistent") +
+  theme(legend.position = "none")
+
+
+p4=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_surveillance_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_mda_rounds, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  ylim(c(0,17)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Failed surveillance")+
+  theme(legend.position = "none")
+
+
+p5=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (rebound_flag==1| passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_mda_rounds, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  ylim(c(0,17)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs Rebound") +
+  theme(legend.position = "none")
+
+
+p6=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_below_threshold_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=median_eff_mda_rounds, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  ylim(c(0,17)) +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs never_below_threshold") +
+  theme(legend.position = "none")
+
+
+plot_all = p1 + p1a + p2 +p3 + p4 + p5 +p6
+plot_all + plot_layout(guides = "collect",ncol=2)
+
+
+```
+
+
+
+# Compare baseline and last TF prevalence 
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=10}
+
+
+p1=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)))) +
+  geom_jitter(aes(x=baseline_tf_max,y=last_max_tf_prev_upr, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  xlab("Baseline TF prevalence") +
+  ylab("Last TF prevalence") +
+  labs(colour="Passed flag") +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  ggtitle("Passed vs all")
+
+
+p1a=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_reached_impact_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=last_max_tf_prev_upr, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  xlab("Baseline TF prevalence") +
+  ylab("Last TF prevalence") +
+  ggtitle("Passed vs BL only, high prev.")+
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  theme(legend.position = "none")
+
+p2=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_impact_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=last_max_tf_prev_upr, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  xlab("Baseline TF prevalence") +
+  ylab("Last TF prevalence") +
+  ggtitle("Passed vs Failed impact") +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  theme(legend.position = "none")
+
+p3=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (persistent_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=last_max_tf_prev_upr, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  xlab("Baseline TF prevalence") +
+  ylab("Last TF prevalence") +
+  ggtitle("Passed vs Persistent") +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  theme(legend.position = "none")
+
+
+p4=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_surveillance_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=last_max_tf_prev_upr, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  xlab("Baseline TF prevalence") +
+  ylab("Last TF prevalence") +
+  ggtitle("Passed vs Failed surveillance")+
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  theme(legend.position = "none")
+
+
+p5=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (rebound_flag==1| passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=last_max_tf_prev_upr, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  xlab("Baseline TF prevalence") +
+  ylab("Last TF prevalence") +
+  ggtitle("Passed vs Rebound") +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  theme(legend.position = "none")
+
+
+p6=ggplot(data=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_below_threshold_flag==1 | passed_flag==1))) +
+  geom_jitter(aes(x=baseline_tf_max,y=last_max_tf_prev_upr, col=factor(passed_flag)), stroke=0, size=1.5, width = 0.4, height = 0.4, alpha=0.5) +
+  xlab("Baseline TF prevalence") +
+  ylab("Last TF prevalence") +
+  ggtitle("Passed vs never_below_threshold") +
+  scale_colour_discrete(drop=F) +
+  scale_x_discrete(drop = F) +
+  theme(legend.position = "none")
+
+plot_all = p1 + p1a + p2 +p3 + p4 + p5 + p6
+plot_all + plot_layout(guides = "collect",ncol=2)
+
+
+```
+
+# Compare baseline $\beta$ and reduction in $\beta$ by 2020
+
+- Higher baseline TF leads to larger reductions in $\beta$ by 2020 and higher baseline $\beta$
+- No change in TF for baseline only, high prevalence IUs
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=10}
+
+
+p1=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & passed_flag==1) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_reduction2020, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median reduction in beta by 2020") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(-0.9,-0.25)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("Passed")
+
+p1a=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_reached_impact_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_reduction2020, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median reduction in beta by 2020") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(-0.9,-0.25)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("BL only, high prev.")
+
+p2=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_impact_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_reduction2020, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median reduction in beta by 2020") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(-0.9,-0.25)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("Failed impact")
+
+p3=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (persistent_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_reduction2020, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median reduction in beta by 2020") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(-0.9,-0.25)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("Persistent") 
+
+
+p4=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_surveillance_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_reduction2020, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median reduction in beta by 2020") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(-0.9,-0.25)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("Failed surveillance")
+
+
+p5=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (rebound_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_reduction2020, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median reduction in beta by 2020") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(-0.9,-0.25)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("Rebound") 
+
+
+p6=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_below_threshold_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_reduction2020, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median reduction in beta by 2020") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(-0.9,-0.25)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("never_below_threshold") 
+
+
+
+plot_all = p1 + p1a + p2 +p3 + p4 + p5 +p6
+plot_all + plot_layout(guides = "collect",ncol=2)
+
+
+```
+# effective MDA rounds by baseline beta and TF prev
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=10}
+
+
+p1=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & passed_flag==1) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_eff_mda_rounds, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(0,13)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("Passed")
+
+p1a=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_reached_impact_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_eff_mda_rounds, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(0,13)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("BL only, high prev.")
+
+p2=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_impact_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_eff_mda_rounds, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(0,13)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("Failed impact")
+
+p3=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (persistent_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_eff_mda_rounds, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(0,13)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("Persistent") 
+
+
+p4=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (failed_surveillance_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_eff_mda_rounds, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(0,13)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("Failed surveillance")
+
+
+p5=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (rebound_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_eff_mda_rounds, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(0,13)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("Rebound") 
+
+
+p6=summary_with_flags %>% filter((!is.na(baseline_tf_max)) & (never_below_threshold_flag==1)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_point(aes(x=median_beta1996,y=median_eff_mda_rounds, shape=last_max_tf_prev_upr, col=baseline_tf_max), alpha=0.5, size=1.5) +
+  xlab("median baseline beta") +
+  ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  xlim(c(0,0.65)) +
+  ylim(c(0,13)) +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) +
+  ggtitle("never_below_threshold") 
+
+
+
+plot_all = p1 + p1a + p2 +p3 + p4 + p5 +p6
+plot_all + plot_layout(guides = "collect",ncol=2)
+
+
+```
+
+# 3d plots
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=10}
+
+p1=summary_with_flags %>% filter((!is.na(baseline_tf_max) & never_reached_impact_flag==0 & !baseline_tf_max==0.05)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_jitter(aes(y=median_beta1996,x=passed_flag,  col=baseline_tf_max), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  #xlab("median baseline beta") +
+  #ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) #+
+  #ggtitle("Passed")
+
+p1a=summary_with_flags %>% filter(!is.na(baseline_tf_max) & never_reached_impact_flag==0  & !baseline_tf_max==0.05) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_jitter(aes(y=median_beta2020,x=passed_flag,  col=baseline_tf_max), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  #xlab("median baseline beta") +
+  #ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) #+
+  #ggtitle("Passed")
+
+
+p2=summary_with_flags %>% filter((!is.na(baseline_tf_max) & never_reached_impact_flag==0 & !baseline_tf_max==0.05)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_jitter(aes(y=median_reduction2020,x=passed_flag, col=baseline_tf_max), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  #xlab("median baseline beta") +
+  #ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) #+
+  #ggtitle("Passed")
+
+
+p3=summary_with_flags %>% filter((!is.na(baseline_tf_max) & never_reached_impact_flag==0 & !baseline_tf_max==0.05)) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_jitter(aes(y=median_eff_mda_rounds,x=passed_flag, col=baseline_tf_max), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  #xlab("median baseline beta") +
+  #ylab("median effective MDA rounds") +
+  labs(colour="Baseline TF",shape="Last TF") +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_shape_discrete(drop=F) #+
+  #ggtitle("Passed")
+
+plot_all = p1 + p1a+ p2 + p3
+plot_all + plot_layout(guides = "collect",ncol=2)
+
+library(plotly)
+
+plot_data = summary_with_flags %>% 
+  filter(!is.na(median_reduction2020) & !is.na(baseline_tf_max) & never_reached_impact_flag==0 & !baseline_tf_max==0.05) %>%
+  mutate(passed_flag = as.factor(passed_flag))
+
+plot_ly(data=plot_data, x=~median_beta2020, y=~median_reduction2020, z=~median_eff_mda_rounds, color=~passed_flag, size = 0.5,
+        symbol=~as.factor(baseline_tf_max), symbols = c("circle-open","square-open","circle","square", "x"), type="scatter3d", mode="markers") %>%
+          layout(title="Passed vs all",
+        scene = list(
+            xaxis = list(title = "beta2020"),   # Change x/y/z axis title
+            yaxis = list(title = "reduction2020"),
+            zaxis = list(title = "eff_mda_rounds"))) 
+
+
+
+plot_data = summary_with_flags %>% 
+  filter(!is.na(median_reduction2020) & !is.na(baseline_tf_max) & never_reached_impact_flag==0 & (passed_flag==1 | never_below_threshold_flag==1) & !baseline_tf_max==0.05) %>%
+  mutate(passed_flag = as.factor(passed_flag))
+
+plot_ly(data=plot_data, x=~median_beta2020, y=~median_reduction2020, z=~median_eff_mda_rounds, color=~passed_flag, size = 0.5,
+        symbol=~as.factor(baseline_tf_max), symbols = c("circle-open","square-open","circle","square", "x"), type="scatter3d", mode="markers") %>%
+          layout(title="Passed vs Never below threshold",
+        scene = list(
+            xaxis = list(title = "beta2020"),   # Change x/y/z axis title
+            yaxis = list(title = "reduction2020"),
+            zaxis = list(title = "eff_mda_rounds"))) 
+
+
+plot_data = summary_with_flags %>% 
+  filter(!is.na(median_reduction2020) & !is.na(baseline_tf_max) & never_reached_impact_flag==0 & (passed_flag==1 | failed_surveillance_flag==1) & !baseline_tf_max==0.05) %>%
+  mutate(passed_flag = as.factor(passed_flag))
+
+plot_ly(data=plot_data, x=~median_beta2020, y=~median_reduction2020, z=~median_eff_mda_rounds, color=~passed_flag, size = 0.5,
+        symbol=~as.factor(baseline_tf_max), symbols = c("circle-open","square-open","circle","square", "x"), type="scatter3d", mode="markers") %>%
+          layout(title="Passed vs failed_surveillance",
+        scene = list(
+            xaxis = list(title = "beta2020"),   # Change x/y/z axis title
+            yaxis = list(title = "reduction2020"),
+            zaxis = list(title = "eff_mda_rounds"))) 
+
+
+
+```
+
+
+# Beta by country
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=20}
+library(sf)
+library(viridis)
+shape <- read_sf(dsn = "ESPEN_IU_2021/", layer = "ESPEN_IU_2021") %>%
+  mutate(IU_ID = as.character(IU_ID))
+
+summary_with_flags_melt = summary_with_flags %>%
+  select(IU_ID,median_beta1996,median_beta2000,median_beta2010,median_beta2020,passed_flag) %>%
+  melt(id.vars = c("IU_ID","passed_flag")) %>%
+  mutate(year = as.numeric(substr(variable,12,15)),
+         beta = value) %>%
+  filter(!is.na(value)) %>%
+  select(IU_ID,year,beta,passed_flag) %>%
+  left_join(shape, by="IU_ID") %>%
+  filter(!is.na(ADMIN0ISO3))
+
+ggplot(data=summary_with_flags_melt) + 
+  geom_line(aes(x = year, y = beta, group=IU_ID, alpha=0.5, col=as.factor(passed_flag)),lwd=0.1) +
+  facet_wrap(~ADMIN0ISO3, ncol=3) +
+  theme(legend.position = "bottom")
+
+```
+
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=10}
+
+IUs = unique(summary_with_flags_melt$IU_ID)
+summary_with_flags_melt_filled = st_as_sf(
+    data.frame(
+      IU_ID = rep(rep(IUs,each=4),2),
+      year= rep(rep(c(1996,2000,2010,2020),length(IUs)),2),
+      passed_flag = rep(c(0,1),each=(length(IUs)*4))) %>% 
+    left_join(shape,by="IU_ID") %>%
+    left_join(summary_with_flags_melt %>% select(IU_ID,year,beta,passed_flag)) %>%
+    mutate(passed_flag = ifelse(passed_flag==0,"failed","passed"))
+)
+
+ggplot(data=summary_with_flags_melt_filled  %>% filter(year %in% c(1996,2020))) + 
+  geom_sf(aes(fill=beta),lwd=0) + 
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  theme(legend.position = "bottom")+
+  facet_grid(year~passed_flag)
+  
+```
+
+# effective MDA rounds by country
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=10}
+
+
+eff_mda_rounds_mapped = summary_with_flags %>%
+  select(IU_ID,median_eff_mda_rounds,median_eff_cov,passed_flag) %>%
+  left_join(shape, by="IU_ID") %>%
+  filter(!is.na(ADMIN0ISO3))
+
+eff_mda_rounds_mapped_filled = st_as_sf(
+    data.frame(
+      IU_ID = rep(IUs,2),
+      passed_flag = rep(c(0,1),each=length(IUs))) %>% 
+    left_join(shape,by="IU_ID") %>%
+    left_join(eff_mda_rounds_mapped) %>%
+    mutate(passed_flag = ifelse(passed_flag==0,"failed","passed"))
+)
+
+
+ggplot(data=eff_mda_rounds_mapped_filled) + 
+  geom_sf(aes(fill=median_eff_mda_rounds),lwd=0) + 
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  theme(legend.position = "bottom")+
+  facet_grid(~passed_flag)
+  
+
+# ggplot(data=eff_mda_rounds_mapped_filled) + 
+#   geom_sf(aes(fill=median_eff_cov),lwd=0) + 
+#   scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+#   theme(legend.position = "bottom")+
+#   facet_grid(~passed_flag)
+
+```
+
+# logistic regression
+
+```{r,message=FALSE}
+glm_data= summary_with_flags %>%
+              filter(never_reached_impact_flag==0 & !is.na(median_reduction2020) & !is.na(baseline_tf_max)) %>%
+              select(median_beta2020,median_reduction2020,median_eff_mda_rounds,
+                     baseline_tf_max,#last_max_tf_prev_upr,
+                     ADMIN0ISO2,
+                     passed_flag,failed_impact_flag,persistent_flag,failed_surveillance_flag,rebound_flag,never_below_threshold_flag)
+
+print("All IUs")
+model_full = glm(passed_flag ~ ((median_beta2020+median_reduction2020+median_eff_mda_rounds) + baseline_tf_max + ADMIN0ISO2) ,
+            data=glm_data %>% select(-c(failed_impact_flag,persistent_flag,failed_surveillance_flag,rebound_flag,never_below_threshold_flag)), 
+            family=binomial(link="logit"))
+summary(model_full)
+
+library(DHARMa)
+simulationOutput <- simulateResiduals(fittedModel = model_full)
+plot(simulationOutput)
+# plotResiduals(simulationOutput, glm_data$median_beta1996, xlab = "median_beta1996", main=NULL)
+# plotResiduals(simulationOutput, glm_data$median_reduction2020, xlab = "median_reduction2020", main=NULL)
+# plotResiduals(simulationOutput, glm_data$median_eff_mda_rounds, xlab = "median_eff_mda_rounds", main=NULL)
+# testDispersion(simulationOutput)
+
+prob=predict(model_full,type=c("response"))
+library(pROC)
+g <- roc(glm_data$passed_flag ~ prob)
+plot(g)    
+
+
+print("Only passed and failed impact")
+model_failed_impact = glm(passed_flag ~ ((median_beta2020+median_reduction2020+median_eff_mda_rounds)  + baseline_tf_max + ADMIN0ISO2),
+            data=glm_data %>% filter(passed_flag==1 | failed_impact_flag==1)  %>% select(-c(failed_impact_flag,persistent_flag,failed_surveillance_flag,rebound_flag,never_below_threshold_flag)), 
+            family=binomial(link="logit"))
+summary(model_failed_impact)
+
+library(DHARMa)
+simulationOutput <- simulateResiduals(fittedModel = model_failed_impact)
+plot(simulationOutput)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | failed_impact_flag==1))$median_beta1996, xlab = "median_beta1996", main=NULL)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | failed_impact_flag==1))$median_reduction2020, xlab = "median_reduction2020", main=NULL)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | failed_impact_flag==1))$median_eff_mda_rounds, xlab = "median_eff_mda_rounds", main=NULL)
+# testDispersion(simulationOutput)
+
+
+prob=predict(model_failed_impact,type=c("response"))
+library(pROC)
+g <- roc((glm_data %>% filter(passed_flag==1 | failed_impact_flag==1))$passed_flag ~ prob)
+plot(g)    
+
+
+print("Only passed and persistent")
+model_persistent = glm(passed_flag ~ ((median_beta2020+median_reduction2020+median_eff_mda_rounds)  + baseline_tf_max + ADMIN0ISO2),
+            data=glm_data %>% filter(passed_flag==1 | persistent_flag==1)  %>% select(-c(failed_impact_flag,persistent_flag,failed_surveillance_flag,rebound_flag,never_below_threshold_flag)), 
+            family=binomial(link="logit"))
+summary(model_persistent)
+
+
+library(DHARMa)
+simulationOutput <- simulateResiduals(fittedModel = model_persistent)
+plot(simulationOutput)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | persistent_flag==1))$median_beta1996, xlab = "median_beta1996", main=NULL)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | persistent_flag==1))$median_reduction2020, xlab = "median_reduction2020", main=NULL)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | persistent_flag==1))$median_eff_mda_rounds, xlab = "median_eff_mda_rounds", main=NULL)
+# testDispersion(simulationOutput)
+
+prob=predict(model_persistent,type=c("response"))
+library(pROC)
+g <- roc((glm_data %>% filter(passed_flag==1 | persistent_flag==1))$passed_flag ~ prob)
+plot(g)    
+
+print("Only passed and failed surveillance")
+model_failed_surveillance = glm(passed_flag ~ ((median_beta2020+median_reduction2020+median_eff_mda_rounds)  + baseline_tf_max + ADMIN0ISO2),
+            data=glm_data %>% filter(passed_flag==1 | failed_surveillance_flag==1)  %>% select(-c(failed_impact_flag,persistent_flag,failed_surveillance_flag,rebound_flag,never_below_threshold_flag)), 
+            family=binomial(link="logit"))
+summary(model_failed_surveillance)
+
+
+library(DHARMa)
+simulationOutput <- simulateResiduals(fittedModel = model_failed_surveillance)
+plot(simulationOutput)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | failed_surveillance_flag==1))$median_beta1996, xlab = "median_beta1996", main=NULL)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | failed_surveillance_flag==1))$median_reduction2020, xlab = "median_reduction2020", main=NULL)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | failed_surveillance_flag==1))$median_eff_mda_rounds, xlab = "median_eff_mda_rounds", main=NULL)
+# testDispersion(simulationOutput)
+
+prob=predict(model_failed_surveillance,type=c("response"))
+library(pROC)
+g <- roc((glm_data %>% filter(passed_flag==1 | failed_surveillance_flag==1))$passed_flag ~ prob)
+plot(g)    
+
+print("Only passed and rebound")
+model_rebound = glm(passed_flag ~ ((median_beta2020+median_reduction2020+median_eff_mda_rounds)  + baseline_tf_max + ADMIN0ISO2) ,
+            data=glm_data %>% filter(passed_flag==1 | rebound_flag==1)  %>% select(-c(failed_impact_flag,persistent_flag,failed_surveillance_flag,rebound_flag,never_below_threshold_flag)), 
+            family=binomial(link="logit"))
+summary(model_rebound)
+
+
+library(DHARMa)
+simulationOutput <- simulateResiduals(fittedModel = model_rebound)
+plot(simulationOutput)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | rebound_flag==1))$median_beta1996, xlab = "median_beta1996", main=NULL)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | rebound_flag==1))$median_reduction2020, xlab = "median_reduction2020", main=NULL)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | rebound_flag==1))$median_eff_mda_rounds, xlab = "median_eff_mda_rounds", main=NULL)
+# testDispersion(simulationOutput)
+
+prob=predict(model_rebound,type=c("response"))
+library(pROC)
+g <- roc((glm_data %>% filter(passed_flag==1 | rebound_flag==1))$passed_flag ~ prob)
+plot(g)    
+
+
+print("Only passed and never_below_threshold")
+model_never_below_threshold = glm(passed_flag ~ ((median_beta2020+median_reduction2020+median_eff_mda_rounds)  + baseline_tf_max + ADMIN0ISO2) ,
+            data=glm_data %>% filter(passed_flag==1 | never_below_threshold_flag==1)  %>% select(-c(failed_impact_flag,persistent_flag,failed_surveillance_flag,rebound_flag,never_below_threshold_flag)), 
+            family=binomial(link="logit"))
+summary(model_never_below_threshold)
+
+
+library(DHARMa)
+simulationOutput <- simulateResiduals(fittedModel = model_never_below_threshold)
+plot(simulationOutput)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | never_below_threshold_flag==1))$median_beta1996, xlab = "median_beta1996", main=NULL)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | never_below_threshold_flag==1))$median_reduction2020, xlab = "median_reduction2020", main=NULL)
+# plotResiduals(simulationOutput, (glm_data %>% filter(passed_flag==1 | never_below_threshold_flag==1))$median_eff_mda_rounds, xlab = "median_eff_mda_rounds", main=NULL)
+# testDispersion(simulationOutput)
+
+prob=predict(model_never_below_threshold,type=c("response"))
+library(pROC)
+g <- roc((glm_data %>% filter(passed_flag==1 | never_below_threshold_flag==1))$passed_flag ~ prob)
+plot(g)    
+
+```
+
+
+# Check trajectories for IUs that failed a surveillance survey or rebounded
+
+- Plotting IUs that failed a surveillance survey or rebounded to see if their simulated trajectories are at the top end of the 0-5% TF prevalence band
+- For IUs where the rebounded data point wasn't fit, the model still hovers around 5% for most IUs. Although some IUs have some simulations that approach 0%
+- When the rebounded data point was fit, none of the IUs reach 0% prevalence
+
+Legend:
+
+- Black points and grey ribbon: median and 95% interval
+- Green horizontal line: 5%
+- Black horizontal line: 0%
+
+```{r,message=FALSE, fig.dim = c(10, 25), out.width="100%"}
+check_traj_q0.5 = sampled_params_all_mutated  %>%
+  left_join(summary_with_flags %>% 
+              select(IU_ID,failed_surveillance_flag,rebound_flag)) %>%
+  filter(rebound_flag==1 | failed_surveillance_flag==1) %>%
+              #select(IU_ID,failed_impact_flag,persistent_flag,failed_surveillance_flag,rebound_flag)) %>%
+  #filter(rebound_flag==1 | failed_surveillance_flag==1 | persistent_flag==1 | failed_impact_flag==1) %>%
+  group_by(IU_ID) %>%
+  summarise_at(vars(starts_with("prev")), median) %>%
+  melt(variable.name = "Year", value.name = "q0.5") %>%
+  mutate(Year=as.numeric(substr(as.character(Year),6,nchar(as.character(Year))))) 
+
+
+check_traj_q0.025 = sampled_params_all_mutated  %>%
+  left_join(summary_with_flags %>% 
+              select(IU_ID,failed_surveillance_flag,rebound_flag)) %>%
+  filter(rebound_flag==1 | failed_surveillance_flag==1) %>%
+              #select(IU_ID,failed_impact_flag,persistent_flag,failed_surveillance_flag,rebound_flag)) %>%
+  #filter(rebound_flag==1 | failed_surveillance_flag==1 | persistent_flag==1 | failed_impact_flag==1) %>%
+  group_by(IU_ID) %>%
+  summarise_at(vars(starts_with("prev")), quantile, na.rm=T,probs=c(0.025)) %>%
+  melt(variable.name = "Year", value.name = "q0.025") %>%
+  mutate(Year=as.numeric(substr(as.character(Year),6,nchar(as.character(Year)))))
+
+
+check_traj_q0.975 = sampled_params_all_mutated  %>%
+  left_join(summary_with_flags %>% 
+              select(IU_ID,failed_surveillance_flag,rebound_flag)) %>%
+  filter(rebound_flag==1 | failed_surveillance_flag==1) %>%
+              #select(IU_ID,failed_impact_flag,persistent_flag,failed_surveillance_flag,rebound_flag)) %>%
+  #filter(rebound_flag==1 | failed_surveillance_flag==1 | persistent_flag==1 | failed_impact_flag==1) %>%
+  group_by(IU_ID) %>%
+  summarise_at(vars(starts_with("prev")), quantile, na.rm=T,probs=c(0.975)) %>%
+  melt(variable.name = "Year", value.name = "q0.975") %>%
+  mutate(Year=as.numeric(substr(as.character(Year),6,nchar(as.character(Year)))))
+
+check_traj_all = cbind(check_traj_q0.5,q0.025=check_traj_q0.025[,"q0.025"],q0.975=check_traj_q0.975[,"q0.975"])
+check_traj_all[which(check_traj_all$q0.5 == 0),"q0.5"] = 0.000001
+check_traj_all[which(check_traj_all$q0.025 == 0),"q0.025"] = 0.000001
+check_traj_all[which(check_traj_all$q0.975 == 0),"q0.975"] = 0.000001
+
+check_traj_all_summary = check_traj_all %>%
+  group_by(IU_ID) %>%
+  summarise(min_tf = min(q0.025,na.rm=T)) %>%
+  arrange(min_tf)
+
+rebound_not_fitted = surveys %>%
+  filter(max_survey_change==1 & !max_tf_prev_upr==0.05 & IU_ID %in% check_traj_all$IU_ID) %>%
+  mutate(max_tf_prev_lwr = case_when(
+    max_tf_prev_upr == 0.099 ~ 0.05,
+    max_tf_prev_upr == 0.299 ~ 0.1,
+    max_tf_prev_upr == 0.499 ~ 0.3,
+    max_tf_prev_upr == 1 ~ 0.5
+  ),
+  IU_ID = factor(IU_ID)) 
+
+print("rebound not fitted")
+
+ggplot(data=check_traj_all %>% 
+         filter(IU_ID %in% rebound_not_fitted$IU_ID) %>%
+         filter(!is.na(q0.5)) %>% 
+         mutate(IU_ID = factor(IU_ID,levels=check_traj_all_summary$IU_ID))) +
+  geom_ribbon(aes(x=Year,ymin=q0.025,ymax=q0.975),col="grey",fill="grey",alpha=0.5) +
+  geom_point(aes(x=Year,y=q0.5)) +
+  geom_hline(aes(yintercept=0.05),colour="green") +
+  geom_hline(aes(yintercept=0.000001),colour="black") +
+  geom_segment(data=rebound_not_fitted, aes(x=Year,y=max_tf_prev_lwr,yend=max_tf_prev_upr),col="red") +
+  ylab("Simulated prevalence (log10 scale)") +
+  scale_y_continuous(trans='log10', limits=c(0.000001,0.6)) +
+  facet_wrap(~IU_ID,ncol=5)
+
+
+print("rebound fitted")
+
+ggplot(aes(x=Year), 
+       data=check_traj_all %>% 
+         filter(!IU_ID %in% rebound_not_fitted$IU_ID) %>%
+         filter(!is.na(q0.5)) %>% 
+         mutate(IU_ID = factor(IU_ID,levels=check_traj_all_summary$IU_ID))) +
+  geom_ribbon(aes(ymin=q0.025,ymax=q0.975),col="grey",fill="grey",alpha=0.5) +
+  geom_point(aes(y=q0.5)) +
+  geom_hline(aes(yintercept=0.05),colour="green") +
+  geom_hline(aes(yintercept=0.000001),colour="black") +
+  ylab("Simulated prevalence (log10 scale)") +
+  scale_y_continuous(trans='log10') +
+  facet_wrap(~IU_ID,ncol=5)
+
+
+
+
+```
+
+
+# Check trajectories for IUs that had only baseline surveys but high prevalence
+
+
+```{r,message=FALSE, fig.dim = c(10, 30), out.width="100%"}
+
+check_traj_q0.5 = sampled_params_all_mutated  %>%
+  left_join(summary_with_flags %>% 
+              select(IU_ID,never_reached_impact_flag,baseline_tf_max)) %>%
+  filter(never_reached_impact_flag==1 ) %>%
+  group_by(IU_ID,baseline_tf_max) %>%
+  summarise_at(vars(starts_with("prev")), median) %>%
+  melt(variable.name = "Year", value.name = "q0.5") %>%
+  mutate(Year=as.numeric(substr(as.character(Year),6,nchar(as.character(Year))))) 
+
+
+check_traj_q0.025 = sampled_params_all_mutated  %>%
+  left_join(summary_with_flags %>% 
+              select(IU_ID,never_reached_impact_flag)) %>%
+  filter(never_reached_impact_flag==1 ) %>%
+  group_by(IU_ID) %>%
+  summarise_at(vars(starts_with("prev")), quantile, na.rm=T,probs=c(0.025)) %>%
+  melt(variable.name = "Year", value.name = "q0.025") %>%
+  mutate(Year=as.numeric(substr(as.character(Year),6,nchar(as.character(Year)))))
+
+
+check_traj_q0.975 = sampled_params_all_mutated  %>%
+  left_join(summary_with_flags %>% 
+              select(IU_ID,never_reached_impact_flag)) %>%
+  filter(never_reached_impact_flag==1 ) %>%
+  group_by(IU_ID) %>%
+  summarise_at(vars(starts_with("prev")), quantile, na.rm=T,probs=c(0.975)) %>%
+  melt(variable.name = "Year", value.name = "q0.975") %>%
+  mutate(Year=as.numeric(substr(as.character(Year),6,nchar(as.character(Year)))))
+
+check_traj_all = cbind(check_traj_q0.5,q0.025=check_traj_q0.025[,"q0.025"],q0.975=check_traj_q0.975[,"q0.975"])
+check_traj_all[which(check_traj_all$q0.5 == 0),"q0.5"] = 0.000001
+check_traj_all[which(check_traj_all$q0.025 == 0),"q0.025"] = 0.000001
+check_traj_all[which(check_traj_all$q0.975 == 0),"q0.975"] = 0.000001
+
+
+check_traj_all_segments = check_traj_all %>% 
+  filter(!is.na(q0.5)) %>% 
+  group_by(IU_ID) %>%
+  tally() %>%
+  filter(n==1) %>%
+  left_join(check_traj_all) %>%
+  filter(!is.na(q0.5))
+  
+  
+  
+
+print("baseline TF = 50-100%")
+
+ggplot(data=check_traj_all %>% 
+         filter(!is.na(q0.5) & baseline_tf_max == 1)) +
+  geom_point(aes(x=Year,y=q0.5)) +
+  geom_ribbon(aes(x=Year,ymin=q0.025,ymax=q0.975),col="grey",fill="grey",alpha=0.5) +
+  geom_segment(data=check_traj_all_segments %>% filter(baseline_tf_max == 1),aes(x=Year,y=q0.025,yend=q0.975),col="black") +
+  geom_hline(aes(yintercept=0.5),colour="green") +
+  geom_hline(aes(yintercept=1),colour="green") +
+  ylab("Simulated prevalence") +
+  #scale_y_continuous(trans='log10') +
+  facet_wrap(~IU_ID,ncol=5)
+
+
+print("baseline TF = 30-50%")
+
+ggplot(data=check_traj_all %>% 
+         filter(!is.na(q0.5) & baseline_tf_max ==0.499) %>% 
+         mutate(IU_ID = factor(IU_ID,levels=unique(check_traj_q0.5$IU_ID)))) +
+  geom_ribbon(aes(x=Year,ymin=q0.025,ymax=q0.975),col="grey",fill="grey",alpha=0.5) +
+  geom_segment(data=check_traj_all_segments %>% filter(baseline_tf_max == 0.499),aes(x=Year,y=q0.025,yend=q0.975),col="black") +
+  geom_point(aes(x=Year,y=q0.5)) +
+  geom_hline(aes(yintercept=0.3),colour="green") +
+  geom_hline(aes(yintercept=0.5),colour="green") +
+  ylab("Simulated prevalence") +
+  #scale_y_continuous(trans='log10') +
+  facet_wrap(~IU_ID,ncol=5)
+
+
+print("baseline TF = 10-30%")
+
+ggplot(data=check_traj_all %>% 
+         filter(!is.na(q0.5) & baseline_tf_max == 0.299) %>% 
+         mutate(IU_ID = factor(IU_ID,levels=unique(check_traj_q0.5$IU_ID)))) +
+  geom_ribbon(aes(x=Year,ymin=q0.025,ymax=q0.975),col="grey",fill="grey",alpha=0.5) +
+  geom_segment(data=check_traj_all_segments %>% filter(baseline_tf_max == 0.299),aes(x=Year,y=q0.025,yend=q0.975),col="black") +
+  geom_point(aes(x=Year,y=q0.5)) +
+  geom_hline(aes(yintercept=0.3),colour="green") +
+  geom_hline(aes(yintercept=0.1),colour="green") +
+  ylab("Simulated prevalence") +
+  #scale_y_continuous(trans='log10') +
+  facet_wrap(~IU_ID,ncol=5)
+
+
+print("baseline TF = 5-10%")
+
+ggplot(data=check_traj_all %>% 
+         filter(!is.na(q0.5) & baseline_tf_max == 0.099) %>% 
+         mutate(IU_ID = factor(IU_ID,levels=unique(check_traj_q0.5$IU_ID)))) +
+  geom_ribbon(aes(x=Year,ymin=q0.025,ymax=q0.975),col="grey",fill="grey",alpha=0.5) +
+  geom_segment(data=check_traj_all_segments %>% filter(baseline_tf_max == 0.099),aes(x=Year,y=q0.025,yend=q0.975),col="black") +
+  geom_point(aes(x=Year,y=q0.5)) +
+  geom_hline(aes(yintercept=0.1),colour="green") +
+  geom_hline(aes(yintercept=0.05),colour="green") +
+  ylab("Simulated prevalence") +
+  #scale_y_continuous(trans='log10') +
+  facet_wrap(~IU_ID,ncol=5)
+
+
+
+```
+
+

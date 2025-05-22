@@ -3,9 +3,6 @@
 library("AMISforInfectiousDiseases")
 library("dplyr")
 setwd("../post_AMIS_analysis")
-# species <- "haematobium"
-# species <- "mansoni_high"
-# species <- "mansoni_low"
 
 set.seed(123)
 folder_id = "source-data-20250220" # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
@@ -66,12 +63,7 @@ for(species in species_all){
   for(id in setdiff(1:num_batches,failed_ids)){
    
     #### Load AMIS output
-    if(!id %in% ctd_ids){
-      load(paste0("../AMIS_output/amis_output",id,".Rdata")) # loads amis_output
-      
-    } else {
-      load(paste0("../AMIS_output_ctd/amis_output",id,".Rdata")) # loads amis_output
-    }
+    load(paste0("../AMIS_output/amis_output",id,".Rdata")) # loads amis_output
     
     iu_names <- rownames(amis_output$prevalence_map[[1]]$data)
     ess = amis_output$ess
@@ -126,7 +118,7 @@ for(species in species_all){
        	  
        	}
 
-        file_name_new <- paste0(path_iu, paste0("InputBeta_",species_prefix, country, iu0,".csv"))
+        file_name_new <- paste0(path_iu, paste0("InputBet_", country, iu0,".csv"))
         write.csv(sampled_params_full, file=file_name_new, row.names = F)
       }
     }

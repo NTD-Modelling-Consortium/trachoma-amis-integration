@@ -1,0 +1,877 @@
+---
+title: "Trachoma Summaries"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+set.seed(200)
+library(knitr)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(gridExtra)
+library(patchwork)
+
+setwd("~/Documents/trachoma-endgame")
+load("sampled_params_all.Rdata")
+load("Maps/trachoma_espen_data.Rdata")
+load("Maps/trachoma_data.Rdata")
+
+
+#num MDA rounds
+num_mda_rounds = trachoma_data %>%
+  mutate(IU_ID = as.character(IU_ID)) %>%
+  group_by(IU_ID) %>%
+  filter(PC_in_group > 0) %>%
+  tally()
+
+
+#### numerical summaries of failed surveys
+sampled_params_all_mutated = sampled_params_all %>%
+  left_join(num_mda_rounds) %>%
+  mutate(mda_rounds = ifelse(is.na(n),0,n)) %>%
+  mutate(eff_mda_rounds = eff_cov * mda_rounds,
+         beta1996 = beta_init,
+         beta2000 = beta_init*beta75,
+         beta2010 = beta_init*beta75*beta85,
+         beta2020 = beta_init*beta75*beta85*beta95) %>%
+  mutate(reduction2000 = (beta2000-beta1996)/beta1996,
+         reduction2010 = (beta2010-beta1996)/beta1996,
+         reduction2020 = (beta2020-beta1996)/beta1996) 
+
+#first maps
+first_map = trachoma_data %>%
+  arrange(IU_ID,Year) %>%
+  group_by(IU_ID) %>%
+  mutate(IU_ID = as.character(IU_ID)) %>%
+  mutate(max_survey_n_clean = ifelse(is.na(max_survey_n),-1,max_survey_n),) %>%
+  mutate(new_data = (!(max_survey_n_clean == lag(max_survey_n_clean))) | (Year==1996 & max_survey_n==0)) %>%
+  filter(new_data == TRUE) %>%
+  summarise(first_data_point = min(Year)) 
+
+
+sampled_params_all_summary = sampled_params_all_mutated %>%
+  group_by(IU_ID) %>%
+  summarise(median_beta1996 = median(beta1996),
+            median_beta2000 = median(beta2000),
+            median_beta2010 = median(beta2010),
+            median_beta2020 = median(beta2020),
+            median_reduction2000 = median(reduction2000),
+            median_reduction2010 = median(reduction2010),
+            median_reduction2020 = median(reduction2020),
+            median_eff_cov = median(eff_cov),
+            median_eff_mda_rounds = median(eff_mda_rounds),
+            lwrquant_beta1996 = quantile(beta1996,probs=0.025),
+            lwrquant_beta2000 = quantile(beta2000,probs=0.025),
+            lwrquant_beta2010 = quantile(beta2010,probs=0.025),
+            lwrquant_beta2020 = quantile(beta2020,probs=0.025),
+            lwrquant_reduction2000 = quantile(reduction2000,probs=0.025),
+            lwrquant_reduction2010 = quantile(reduction2010,probs=0.025),
+            lwrquant_reduction2020 = quantile(reduction2020,probs=0.025),
+            lwrquant_eff_cov = quantile(eff_cov,probs=0.025),
+            lwrquant_eff_mda_rounds = quantile(eff_mda_rounds,probs=0.025),
+            uprquant_beta1996 = quantile(beta1996,probs=0.975),
+            uprquant_beta2000 = quantile(beta2000,probs=0.975),
+            uprquant_beta2010 = quantile(beta2010,probs=0.975),
+            uprquant_beta2020 = quantile(beta2020,probs=0.975),
+            uprquant_reduction2000 = quantile(reduction2000,probs=0.975),
+            uprquant_reduction2010 = quantile(reduction2010,probs=0.975),
+            uprquant_reduction2020 = quantile(reduction2020,probs=0.975),
+            uprquant_eff_cov = quantile(eff_cov,probs=0.975),
+            uprquant_eff_mda_rounds = quantile(eff_mda_rounds,probs=0.975)) %>%  
+  ungroup() %>%
+  left_join(first_map) %>%
+  mutate(median_beta2000 = ifelse(first_data_point >2000, NA, median_beta2000),
+            median_beta2010 = ifelse(first_data_point >2010, NA, median_beta2010),
+            median_beta2020 = ifelse(first_data_point >2020, NA, median_beta2020),
+            median_reduction2000 = ifelse(first_data_point >2000, NA, median_reduction2000),
+            median_reduction2010 = ifelse(first_data_point >2010, NA, median_reduction2010),
+            median_reduction2020 = ifelse(first_data_point >2020, NA, median_reduction2020),
+            lwrquant_beta2000 = ifelse(first_data_point >2000, NA, lwrquant_beta2000),
+            lwrquant_beta2010 = ifelse(first_data_point >2010, NA, lwrquant_beta2010),
+            lwrquant_beta2020 = ifelse(first_data_point >2020, NA, lwrquant_beta2020),
+            lwrquant_reduction2000 = ifelse(first_data_point >2000, NA, lwrquant_reduction2000),
+            lwrquant_reduction2010 = ifelse(first_data_point >2010, NA, lwrquant_reduction2010),
+            lwrquant_reduction2020 = ifelse(first_data_point >2020, NA, lwrquant_reduction2020),
+            uprquant_beta2000 = ifelse(first_data_point >2000, NA, uprquant_beta2000),
+            uprquant_beta2010 = ifelse(first_data_point >2010, NA, uprquant_beta2010),
+            uprquant_beta2020 = ifelse(first_data_point >2020, NA, uprquant_beta2020),
+            uprquant_reduction2000 = ifelse(first_data_point >2000, NA, uprquant_reduction2000),
+            uprquant_reduction2010 = ifelse(first_data_point >2010, NA, uprquant_reduction2010),
+            uprquant_reduction2020 = ifelse(first_data_point >2020, NA, uprquant_reduction2020))
+
+# can replace this when redoing trachoma
+surveys = trachoma_espen_data %>%
+  group_by(IU_ID) %>%
+  mutate(survey_n_clean = ifelse(is.na(survey_n),-1,survey_n)) %>%
+  mutate(survey_change = ifelse((survey_n_clean == lag(survey_n_clean) & !(type_prevalence == lag(type_prevalence))),1,0)) %>%
+  mutate(survey_change = ifelse(is.na(survey_change),0,survey_change)) %>%
+  mutate(type_prevalence_num = case_when(
+    type_prevalence == "baseline" ~ 0,
+    type_prevalence == "impact" ~ 1,
+    type_prevalence == "surveillance" ~ 2
+  )) %>% 
+  ungroup() %>%
+  group_by(IU_ID, Year, ADMIN0ISO2) %>%
+  summarise(max_tf_prev_upr = ifelse(length(which(!is.na(tf_prev_upr)))>0,max(tf_prev_upr, na.rm=T),NA),
+            max_survey_n = ifelse(length(which(!is.na(tf_prev_upr)))>0,max(survey_n, na.rm=T),NA),
+            max_survey_change = ifelse(length(which(!is.na(tf_prev_upr)))>0,max(survey_change, na.rm=T),NA),
+            PC_in_group = max(PC),
+            max_type_prevalence_num = ifelse(length(which(!is.na(tf_prev_upr)))>0,max(type_prevalence_num,na.rm=T),NA)) %>%
+  ungroup() %>% 
+  arrange(IU_ID,Year) %>%
+  group_by(IU_ID) %>%
+  mutate(max_survey_n_clean = ifelse(is.na(max_survey_n),-1,max_survey_n)) %>%
+  mutate(new_data = (!(max_survey_n_clean == lag(max_survey_n_clean))) | (Year==1996 & max_survey_n==0) | max_survey_change == 1) %>%
+  filter(new_data == TRUE)
+
+# baseline + latest prev (ESPEN)
+baseline_tf = surveys %>%
+  group_by(IU_ID,ADMIN0ISO2) %>%
+  filter(max_type_prevalence_num == 0) %>%
+  summarise(baseline_tf_max = factor(max(max_tf_prev_upr), levels=c("0.05",  "0.099", "0.299", "0.499", "1"))) %>%
+  mutate(IU_ID = as.character(IU_ID),
+         ADMIN0ISO2 = factor(ADMIN0ISO2, levels=unique(surveys$ADMIN0ISO2)))
+
+last_year_and_num_surveys = surveys %>%
+  group_by(IU_ID,ADMIN0ISO2) %>%
+  summarise(last_year = max(Year),
+            num_surveys = n())
+
+latest_tf = surveys %>%
+  left_join(last_year_and_num_surveys) %>%
+  filter(Year==last_year) %>%
+  group_by(IU_ID,ADMIN0ISO2,num_surveys) %>%
+  mutate(last_max_tf_prev_upr = factor(max_tf_prev_upr, levels=c("0.05",  "0.099", "0.299", "0.499", "1")),
+         IU_ID = as.character(IU_ID),
+         ADMIN0ISO2 = factor(ADMIN0ISO2, levels=unique(surveys$ADMIN0ISO2)), 
+         last_year=factor(last_year)) %>%
+  select(IU_ID,last_year,ADMIN0ISO2,last_max_tf_prev_upr,num_surveys)
+
+
+# impact survey failures
+#ius_that_failed_impact_surveys = trachoma_espen_data %>%
+#  filter(type_prevalence %in% c("impact") & !tf_prev_upr == 0.05)
+ius_that_failed_impact_surveys = surveys %>%
+  filter(max_type_prevalence_num == 1 & !max_tf_prev_upr == 0.05)
+
+sampled_params_failed_impact_summary= sampled_params_all_summary %>%
+  filter(IU_ID %in% ius_that_failed_impact_surveys$IU_ID) %>%
+  group_by(IU_ID) 
+
+# surveillance survey failures
+#ius_that_failed_surveillance_surveys = trachoma_espen_data %>%
+#  filter(type_prevalence %in% c("surveillance") & !tf_prev_upr == 0.05)
+ius_that_failed_surveillance_surveys = surveys %>%
+  filter(max_type_prevalence_num == 2 & !max_tf_prev_upr == 0.05)
+
+sampled_params_failed_surveillance_summary = sampled_params_all_summary %>%
+  filter(IU_ID %in% ius_that_failed_surveillance_surveys$IU_ID) %>%
+  group_by(IU_ID) 
+
+# rebounds
+sampled_params_rebounds_summary = sampled_params_all_summary %>%
+  filter(IU_ID %in% ius_that_failed_surveillance_surveys$IU_ID & (!IU_ID %in% ius_that_failed_impact_surveys$IU_ID))
+
+# persistance 
+# ius_persistent = trachoma_espen_data %>%
+#   group_by(IU_ID,Geoconnect_ID) %>%
+#   summarise(min_tf = ifelse(length(which(!is.na(tf_prev_upr)))>0,min(tf_prev_upr, na.rm=T),NA),
+#             num_impacts_failed = length(which(type_prevalence=="impact" & tf_prev_upr > 0.05))) %>%
+#   ungroup() %>%
+#   filter(min_tf > 0.05 & num_impacts_failed >= 2) 
+ius_persistent = surveys %>%
+  group_by(IU_ID) %>%
+  summarise(min_tf = min(max_tf_prev_upr),
+            num_impacts_failed =  length(which(max_type_prevalence_num==1 & max_tf_prev_upr > 0.05))) %>%
+  ungroup() %>%
+  filter(min_tf > 0.05 & num_impacts_failed >= 2)
+
+# persistent
+sampled_params_persistent_summary = sampled_params_all_summary %>%
+  filter(IU_ID %in% ius_persistent$IU_ID)
+
+# never had impact survey
+high_prev_no_impact = surveys %>%
+  group_by(IU_ID,ADMIN0ISO2) %>%
+  summarise(max_survey_type = max(max_type_prevalence_num),
+            min_tf_prev = min(max_tf_prev_upr)) %>%
+  filter(max_survey_type == 0 & min_tf_prev>0.05) %>%
+  mutate(IU_ID = as.character(IU_ID)) 
+  
+sampled_params_highprev_noimpact_summary= sampled_params_all_summary %>%
+  filter(IU_ID %in% high_prev_no_impact$IU_ID)
+
+# passed surveys
+sampled_params_passed_summary= sampled_params_all_summary %>%
+  filter(!IU_ID %in% c(ius_that_failed_impact_surveys$IU_ID,ius_that_failed_surveillance_surveys$IU_ID,high_prev_no_impact$IU_ID)) %>%
+  group_by(IU_ID) 
+
+
+# never_below_threshold
+ius_never_below_threshold = surveys %>%
+  group_by(IU_ID,ADMIN0ISO2) %>%
+  summarise(min_tf = min(max_tf_prev_upr)) %>%
+  filter(min_tf > 0.05)
+
+sampled_params_never_below_threshold_summary = sampled_params_all_summary %>%
+  filter(IU_ID %in% ius_never_below_threshold$IU_ID & !IU_ID %in% high_prev_no_impact$IU_ID)
+
+
+# add flags
+summary_with_flags = sampled_params_all_summary %>%
+  mutate(never_reached_impact_flag = ifelse(IU_ID %in% high_prev_no_impact$IU_ID,1,0),
+         failed_impact_flag = ifelse(IU_ID %in% sampled_params_failed_impact_summary$IU_ID,1,0),
+         persistent_flag = ifelse(IU_ID %in% sampled_params_persistent_summary$IU_ID,1,0),
+         failed_surveillance_flag = ifelse(IU_ID %in% sampled_params_failed_surveillance_summary$IU_ID,1,0),
+         rebound_flag = ifelse(IU_ID %in% sampled_params_rebounds_summary$IU_ID,1,0),
+         never_below_threshold_flag = ifelse(IU_ID %in% sampled_params_never_below_threshold_summary$IU_ID,1,0),
+         passed_flag = ifelse(!IU_ID %in% c(high_prev_no_impact$IU_ID,sampled_params_failed_impact_summary$IU_ID, sampled_params_failed_surveillance_summary$IU_ID),1,0),
+         median_beta1996_binned = cut(median_beta1996,breaks=20,ordered_result=T)) %>%
+  left_join(baseline_tf) %>%
+  left_join(latest_tf) %>%
+  mutate(min_tf = factor(baseline_tf_max, levels=unique(baseline_tf$baseline_tf_max)),
+         median_eff_mda_rounds_binned = factor(case_when(
+           median_eff_mda_rounds <= 5 ~ "<=5",
+           median_eff_mda_rounds > 5 & median_eff_mda_rounds <=10 ~ "6-10",
+           median_eff_mda_rounds > 10 ~ "11+",
+         ), levels=c("<=5", "6-10", "11+")),
+         median_eff_cov_binned = factor(case_when(
+           median_eff_cov <= 0.7 ~ "<=0.7",
+           median_eff_cov > 0.7 & median_eff_cov <= 0.8 ~ "0.7-0.8",
+           median_eff_cov > 0.8 ~ "0.8+"
+         ), levels=c("<=0.7","0.7-0.8","0.8+")))
+
+library(randomcoloR)
+palette <- distinctColorPalette(length(unique(baseline_tf$ADMIN0ISO2)))
+
+```
+
+# Terminology 
+
+- "Passed" refers to those IUs that didn't fail any impact or surveillance surveys, or if no impact or surveillance surveys were performed, the minimum TF prevalence was <5%. 
+
+- "Failed" refers to IUs that either failed at least 1 impact survey (TF > 5%) or failed at least 1 surveillance survey (TF > 5%) (not mutually exclusive)
+
+- Effective MDA rounds $=$ MDA rounds recorded in ESPEN $\times$ estimated effective coverage  
+
+- "Reduction" refers to the percentage reduction in the relevant parameter (beta/prevalence). So more negative means a larger reduction in the parameter
+
+# Comparisons for IUs with baseline prevalence > 5% 
+
+## 2D comparisons
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=8}
+
+plot_data = summary_with_flags %>% 
+  filter((!is.na(baseline_tf_max) &!baseline_tf_max==0.05)) %>%
+  mutate(baseline_tf_max = factor(baseline_tf_max,levels=c("0.099", "0.299", "0.499", "1"))) %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) 
+
+p1= plot_data %>%
+  ggplot() +
+  geom_jitter(aes(y=median_beta1996,x=passed_flag,  col=baseline_tf_max), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  labs(colour="Baseline TF",shape="Last TF") +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_x_continuous(breaks=c(0,1),labels=c("Failed","Passed")) +
+  theme(axis.title.x=element_blank()) +
+  ylab("Median baseline beta")
+
+p1a=plot_data %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_jitter(aes(y=median_beta2020,x=passed_flag,  col=baseline_tf_max), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  labs(colour="Baseline TF",shape="Last TF") +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_x_continuous(breaks=c(0,1),labels=c("Failed","Passed")) +
+  theme(axis.title.x=element_blank()) +
+  ylab("Median beta in 2020")
+
+
+p2=plot_data %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_jitter(aes(y=median_reduction2020,x=passed_flag, col=baseline_tf_max), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  labs(colour="Baseline TF",shape="Last TF") +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_x_continuous(breaks=c(0,1),labels=c("Failed","Passed")) +
+  theme(axis.title.x=element_blank()) +
+  ylab("Median reduction in beta by 2020")
+ 
+
+p3=plot_data %>%
+  tidyr::complete(last_max_tf_prev_upr,baseline_tf_max) %>%
+  ggplot() +
+  geom_jitter(aes(y=median_eff_mda_rounds,x=passed_flag, col=baseline_tf_max), stroke=0, size=1.5, width = 0.4, height = 0, alpha=0.5) +
+  labs(colour="Baseline TF",shape="Last TF") +
+  scale_colour_manual(values=palette, drop=F) +
+  scale_x_continuous(breaks=c(0,1),labels=c("Failed","Passed")) +
+  theme(axis.title.x=element_blank()) +
+  ylab("Median effective MDA rounds")
+
+plot_all = p1 + p1a+ p2 + p3
+plot_all + plot_layout(guides = "collect",ncol=2)
+```
+
+
+
+## 3D comparisons
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=10,fig.width=10}
+library(plotly)
+
+plot_data = summary_with_flags %>% 
+  filter(!is.na(median_reduction2020) & !is.na(baseline_tf_max) & !baseline_tf_max==0.05) %>%
+  mutate(passed_flag = ifelse(passed_flag==1,"Passed","Failed"))
+
+plot_ly(data=plot_data, x=~median_beta2020, y=~median_reduction2020, z=~median_eff_mda_rounds, color=~passed_flag, size = 0.5,
+        symbol=~as.factor(baseline_tf_max), symbols = c("circle-open","square-open","circle","square", "x"), type="scatter3d", mode="markers") %>%
+          layout(title="Passed vs failed",
+        scene = list(
+            xaxis = list(title = "beta2020"),   # Change x/y/z axis title
+            yaxis = list(title = "reduction2020"),
+            zaxis = list(title = "eff_mda_rounds")),
+        legend = list(title=list(text="Baseline prev."))) 
+
+
+
+plot_data = summary_with_flags %>% 
+  filter(!is.na(median_reduction2020) & !is.na(baseline_tf_max) & (passed_flag==1 | failed_impact_flag==1) & !baseline_tf_max==0.05) %>%
+  mutate(passed_flag = ifelse(passed_flag==1,"Passed","Failed"))
+
+plot_ly(data=plot_data, x=~median_beta2020, y=~median_reduction2020, z=~median_eff_mda_rounds, color=~passed_flag, size = 0.5,
+        symbol=~as.factor(baseline_tf_max), symbols = c("circle-open","square-open","circle","square", "x"), type="scatter3d", mode="markers") %>%
+          layout(title="Passed vs failed >=1 impact",
+        scene = list(
+            xaxis = list(title = "beta2020"),   # Change x/y/z axis title
+            yaxis = list(title = "reduction2020"),
+            zaxis = list(title = "eff_mda_rounds")),
+        legend = list(title=list(text="Baseline prev."))) 
+
+
+plot_data = summary_with_flags %>% 
+  filter(!is.na(median_reduction2020) & !is.na(baseline_tf_max) & (passed_flag==1 | failed_surveillance_flag==1) & !baseline_tf_max==0.05) %>%
+  mutate(passed_flag = ifelse(passed_flag==1,"Passed","Failed"))
+
+plot_ly(data=plot_data, x=~median_beta2020, y=~median_reduction2020, z=~median_eff_mda_rounds, color=~passed_flag, size = 0.5,
+        symbol=~as.factor(baseline_tf_max), symbols = c("circle-open","square-open","circle","square", "x"), type="scatter3d", mode="markers") %>%
+          layout(title="Passed vs failed >=1 surveillance",
+        scene = list(
+            xaxis = list(title = "beta2020"),   # Change x/y/z axis title
+            yaxis = list(title = "reduction2020"),
+            zaxis = list(title = "eff_mda_rounds")),
+        legend = list(title=list(text="Baseline prev."))) 
+
+
+
+```
+
+
+# By pass/fail category: beta (baseline and 2020), year stopped MDA, baseline TF, overall prevalence reduction, and effective MDA rounds 
+
+```{r,message=FALSE,warning=FALSE,out.width="100%", fig.width= 8}
+library(sf)
+library(viridis)
+shape <- read_sf(dsn = "ESPEN_IU_2021/", layer = "ESPEN_IU_2021") %>%
+  mutate(IU_ID = as.character(IU_ID))
+
+beta_melt = summary_with_flags %>%
+  select(IU_ID,median_beta1996,median_beta2000,median_beta2010,median_beta2020,passed_flag) %>%
+  melt(id.vars = c("IU_ID","passed_flag")) %>%
+  mutate(year = as.numeric(substr(variable,12,15)),
+         beta = value) %>%
+  filter(!is.na(value)) %>%
+  select(IU_ID,year,beta,passed_flag) %>%
+  left_join(shape, by="IU_ID") %>%
+  filter(!is.na(ADMIN0ISO3)) %>%
+  mutate(category = ifelse(passed_flag==1,"passed","failed"))
+
+IUs = unique(beta_melt$IU_ID)
+
+beta_melt_filled = st_as_sf(
+    data.frame(
+      IU_ID = rep(rep(IUs,each=4),2),
+      year= rep(rep(c(1996,2000,2010,2020),length(IUs)),2),
+      category = rep(c("passed","failed"),each=(length(IUs)*4))) %>% 
+    left_join(shape,by="IU_ID") %>%
+    left_join(beta_melt %>% select(IU_ID,year,beta,category)) 
+)
+
+ggplot(data=beta_melt_filled  %>% filter(year %in% c(1996,2020))) + 
+  geom_sf(aes(fill=beta),lwd=0) + 
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  theme(legend.position = "bottom")+
+  labs(fill="Median beta") +
+  facet_grid(year~category)
+
+
+```
+
+- Note: countries still undergoing MDA as at 2021 shown as "stopping" in 2030 i.e. yellow
+
+```{r,message=FALSE,warning=FALSE,out.width="70%", fig.width= 6, fig.height=20, fig.align="center"}
+
+stopped_mda = trachoma_espen_data %>%
+  filter(PC == 1) %>%
+  group_by(IU_ID) %>%
+  summarise(last_MDA = max(Year))  %>%
+  mutate(last_MDA = ifelse(last_MDA==2021,2030,last_MDA),
+         IU_ID = as.character(IU_ID)) %>%
+  left_join(summary_with_flags, by="IU_ID") %>%
+  mutate(category=ifelse(passed_flag==0,"failed","passed"))
+
+
+stopped_mda_filled = st_as_sf(
+    data.frame(IU_ID = rep(IUs,2),
+               category = rep(c("failed","passed"),each=length(IUs))) %>%
+  left_join(stopped_mda, by=c("IU_ID","category"))  %>%
+  left_join(shape, by="IU_ID") %>%
+  filter(!is.na(ADMIN0ISO3)) 
+)
+
+
+p1=ggplot(data=stopped_mda_filled) + 
+  geom_sf(aes(fill=last_MDA),lwd=0) + 
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  labs(fill = "Year stopped MDA") +
+  theme(legend.position = "bottom") + 
+  facet_wrap(~category)
+
+
+baseline_tf_filled = st_as_sf(
+    data.frame(IU_ID = rep(IUs,2),
+               passed_flag = rep(c(0,1),each=length(IUs))) %>%
+    left_join(shape,by="IU_ID") %>%
+    left_join(summary_with_flags %>% select(IU_ID,baseline_tf_max,passed_flag), by=c("IU_ID","passed_flag")) %>%
+    mutate(baseline_tf_max = as.numeric(as.character(baseline_tf_max))) %>%
+    mutate(category=ifelse(passed_flag==0,"failed","passed"))
+)
+
+p2=ggplot(data=baseline_tf_filled) + 
+  geom_sf(aes(fill=baseline_tf_max),lwd=0) + 
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  labs(fill = "Baseline TF prev.") +
+  theme(legend.position = "bottom") + 
+  facet_wrap(~category)
+
+
+prev_drop = summary_with_flags %>%
+  select(IU_ID, baseline_tf_max, last_max_tf_prev_upr,passed_flag) %>%
+  rowwise() %>%
+  mutate(prevalence_reduction = min(0,((as.numeric(as.character(last_max_tf_prev_upr)) - as.numeric(as.character(baseline_tf_max)))/as.numeric(as.character(baseline_tf_max))),na.rm=T)) %>%
+  mutate(category=ifelse(passed_flag==0,"failed","passed"))
+
+prev_drop_filled = st_as_sf(
+    data.frame(IU_ID = rep(IUs,2),
+               category = rep(c("failed","passed"),each=length(IUs))) %>%
+    left_join(shape,by="IU_ID") %>%
+    left_join(prev_drop, by=c("IU_ID","category")) 
+)
+
+
+p3=ggplot(data=prev_drop_filled) + 
+  geom_sf(aes(fill=prevalence_reduction),lwd=0) + 
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  labs(fill = "Prev. reduction by 2020") +
+  theme(legend.position = "bottom")+ 
+  facet_wrap(~category)
+
+
+
+
+eff_mda_rounds_mapped = summary_with_flags %>%
+  select(IU_ID,median_eff_mda_rounds,median_eff_cov,passed_flag) %>%
+  left_join(shape, by="IU_ID") %>%
+  filter(!is.na(ADMIN0ISO3)) %>%
+  mutate(category = ifelse(passed_flag==1,"passed","failed"))
+
+eff_mda_rounds_mapped_filled = st_as_sf(
+    data.frame(
+      IU_ID = rep(IUs,2),
+      category = rep(c("passed","failed"),each=length(IUs))) %>%
+    left_join(shape,by="IU_ID") %>%
+    left_join(eff_mda_rounds_mapped, by=c("IU_ID","category"))
+)
+
+p4=ggplot(data=eff_mda_rounds_mapped_filled) +
+  geom_sf(aes(fill=median_eff_mda_rounds),lwd=0) +
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  labs(fill = "Eff. MDA rounds") +
+  theme(legend.position = "bottom")+
+  facet_grid(~category)
+
+p5=ggplot(data=eff_mda_rounds_mapped_filled) +
+  geom_sf(aes(fill=median_eff_cov),lwd=0) +
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  labs(fill = "Eff. coverage") +
+  theme(legend.position = "bottom")+
+  facet_grid(~category)
+
+
+plot_all = p1 + p2 + p3 + p4 + p5
+plot_all + plot_layout(ncol=1)
+
+```
+
+<!-- # Beta by country -->
+
+<!-- ```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=20} -->
+
+<!-- ggplot(data=beta_melt) +  -->
+<!--   geom_line(aes(x = year, y = beta, group=IU_ID, alpha=0.5, col=category),lwd=0.1) + -->
+<!--   facet_wrap(~ADMIN0ISO3, ncol=3) + -->
+<!--   theme(legend.position = "bottom") -->
+
+<!-- ``` -->
+
+
+# For all IUs: separate IUs based on outcome of 1st survey of each type (baseline, impact, surveillance) and reported TF prevalence 
+
+
+```{r,message=FALSE,warning=FALSE}
+all_years_vector_id = seq(1996,2022,by=0.25)
+
+failed_ids = c(55,69,113,114,123,150,153,170,180,189,276,296,369,375,376,379,380,381,495,503,510,528,530,532,533,541)
+ctd_ids = c()
+id_vec = setdiff(1:564,c(failed_ids))
+
+# combine trajectories
+prob_exceedence_allIUs = data.frame()
+median_simulated_prev_allIUs = data.frame()
+
+for (id in id_vec){
+
+  load("~/Documents/trachoma-endgame/Maps/trachoma_maps.rds")
+  load("~/Documents/trachoma-endgame/Maps/trachoma_map_years.rds")
+
+  load(paste0("AMIS_output/amis_output",id,".Rdata"))
+  load(paste0("trajectories/trajectories_",id,".Rdata"))
+  colnames(trajectories) = all_years_vector_id
+  iu_names = names(amis_output$ess)
+
+  prevalence_map = trachoma_maps
+  prevalence_map = lapply(1:length(prevalence_map), function(t){
+    output=list(data = as.matrix(prevalence_map[[t]]$data %>%
+                                   filter(TaskID==id) %>%
+                                   select(max_tf_prev_upr),ncol=1),
+                likelihood = prevalence_map[[t]]$likelihood)
+    rownames(output$data) = prevalence_map[[t]]$data$IU_ID[prevalence_map[[t]]$data$TaskID==id]
+    return(output)
+  })
+
+  # just get maps with data for this batch
+  map_bool_id = which(sapply(1:length(prevalence_map), function(t) !all(is.na(prevalence_map[[t]]$data))))
+  years_vector_id = years_vector[map_bool_id]
+  prevalence_map = lapply(map_bool_id, function(t) {
+    data = as.data.frame(prevalence_map[[t]]$data) %>%
+      mutate(tf_prev_lwr = case_when(
+        max_tf_prev_upr == 0.05 ~ 0,
+        max_tf_prev_upr == 0.099 ~ 0.05,
+        max_tf_prev_upr == 0.299 ~ 0.1,
+        max_tf_prev_upr == 0.499 ~ 0.3,
+        max_tf_prev_upr == 1 ~ 0.5))
+    return(list(data=data,likelihood=prevalence_map[[t]]$likelihood))
+  })
+
+  for (iu in iu_names){
+     
+    if(iu %in% sampled_params_all$IU_ID){
+
+    #sampled_params = read.csv(paste0("~/Documents/trachoma-endgame/post_AMIS_analysis/trachoma-source-data-20250225-espen-input-bet-csv/InputBet_",country_code,iu0,".csv"))
+    sampled_params = sampled_params_all %>%
+      filter(IU_ID==iu)
+    
+    trajectories_iu = data.frame(IU_ID=iu,
+                                 trajectories[sampled_params$seed,colnames(trajectories) %in% as.character(years_vector_id)])
+    colnames(trajectories_iu) = c("IU_ID",years_vector_id)
+
+    prob_exceedence_allyears = as.data.frame(matrix(rep(NA,length(years_vector)),nrow=1))
+    colnames(prob_exceedence_allyears) = years_vector
+    prob_exceedence_allyears = cbind(IU_ID=iu,prob_exceedence_allyears)
+
+    prob_exceedence = apply(trajectories_iu %>% select(-IU_ID),2,function(x) {sum(x>0.05)/nrow(trajectories_iu)})
+    prob_exceedence_allyears[names(prob_exceedence)] = prob_exceedence
+
+    prob_exceedence_allIUs = rbind(prob_exceedence_allIUs,prob_exceedence_allyears)
+
+
+    median_simulated_prev_allyears = as.data.frame(matrix(rep(NA,length(years_vector)),nrow=1))
+    colnames(median_simulated_prev_allyears) = years_vector
+    median_simulated_prev_allyears = cbind(IU_ID=iu,median_simulated_prev_allyears)
+
+    median_simulated_prev = apply(trajectories_iu %>% select(-IU_ID),2,median)
+    median_simulated_prev_allyears[names(median_simulated_prev)] = median_simulated_prev
+
+    median_simulated_prev_allIUs = rbind(median_simulated_prev_allIUs,median_simulated_prev_allyears)
+
+    }
+  }
+}
+```
+
+
+## Proportion of simulations that exceeded 5% TF prevalence
+
+- Of note is that many IUs that passed their first impact survey still have reasonably high proportions of simulations that exceeded 5% prevalence
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=12, fig.width=8}
+
+prob_exceedence_allIUs_melt = prob_exceedence_allIUs %>%
+  melt(id.vars="IU_ID",variable.name="Year",value.name="prop_sims_gt_5pc") %>%
+  mutate(Year=as.numeric(as.character(Year))) %>%
+  left_join(surveys %>% mutate(IU_ID=as.character(IU_ID)),by=c("IU_ID","Year")) %>%
+  filter(!is.na(prop_sims_gt_5pc) & !is.na(new_data)) %>%
+  left_join(summary_with_flags) %>%
+  mutate(failed_survey_type = ifelse(max_tf_prev_upr>0.05,1,0))
+
+first_surveys_exceedence = prob_exceedence_allIUs_melt %>%
+  group_by(IU_ID,max_type_prevalence_num) %>%
+  summarise(first_year_by_type = min(Year))  %>%
+  left_join(prob_exceedence_allIUs_melt %>% select(IU_ID,Year,max_tf_prev_upr,max_type_prevalence_num,prop_sims_gt_5pc,failed_survey_type), by=c("IU_ID","max_type_prevalence_num","first_year_by_type"="Year")) %>%
+    mutate(survey_type = case_when(max_type_prevalence_num == 0 ~ "first baseline",
+                                   max_type_prevalence_num == 1 ~ "first impact",
+                                   max_type_prevalence_num == 2 ~ "first surveillance"),
+           prevalence_band = factor(case_when(max_tf_prev_upr == 0.05 ~ "<5%",
+                                       max_tf_prev_upr == 0.099 ~ "5-10%",
+                                       max_tf_prev_upr == 0.299 ~ "10-30%",
+                                       max_tf_prev_upr == 0.499 ~ "30-50%",
+                                       max_tf_prev_upr == 1 ~ "50-100%"),levels=c("<5%","5-10%","10-30%","30-50%","50-100%")))
+
+
+prob_exceedence_allIUs_filled = st_as_sf(
+    data.frame(
+      IU_ID = rep(rep(IUs,each=3),5),
+      survey_type = rep(rep(c("first baseline","first impact","first surveillance"),length(IUs)),5),
+      prevalence_band = factor(rep(levels(first_surveys_exceedence$prevalence_band),each=(length(IUs)*3)),levels=c("<5%","5-10%","10-30%","30-50%","50-100%"))) %>%
+    left_join(first_surveys_exceedence) %>%
+    left_join(shape,by="IU_ID")
+)
+
+ggplot(data=prob_exceedence_allIUs_filled) +
+  geom_sf(aes(fill=prop_sims_gt_5pc),lwd=0) +
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  theme(legend.position = "bottom") +
+  labs(fill="Prop. simulations with TF > 5%") +
+  facet_grid(prevalence_band~survey_type)
+```
+
+
+## Median simulated prevalence
+
+- For IUs that passed their first impact survey, the median prevalence is close to <5%, even though many had high proportions of simulations that exceeded 5% prevalence (previous plot)
+
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=12, fig.width=8}
+
+median_simulated_prev_allIUs_melt = median_simulated_prev_allIUs %>%
+  melt(id.vars="IU_ID",variable.name="Year",value.name="median_sim_prev") %>%
+  mutate(Year=as.numeric(as.character(Year))) %>%
+  left_join(surveys %>% mutate(IU_ID=as.character(IU_ID)),by=c("IU_ID","Year")) %>%
+  filter(!is.na(median_sim_prev) & !is.na(new_data)) %>%
+  left_join(summary_with_flags)  %>%
+  mutate(failed_survey_type = ifelse(max_tf_prev_upr>0.05,1,0))
+
+
+first_surveys_median = median_simulated_prev_allIUs_melt %>%
+  group_by(IU_ID,max_type_prevalence_num) %>%
+  summarise(first_year_by_type = min(Year))  %>%
+  left_join(median_simulated_prev_allIUs_melt %>% select(IU_ID,Year,max_tf_prev_upr,max_type_prevalence_num,median_sim_prev,failed_survey_type), by=c("IU_ID","max_type_prevalence_num","first_year_by_type"="Year")) %>%
+    mutate(survey_type = case_when(max_type_prevalence_num == 0 ~ "first baseline",
+                                   max_type_prevalence_num == 1 ~ "first impact",
+                                   max_type_prevalence_num == 2 ~ "first surveillance"),
+           prevalence_band = factor(case_when(max_tf_prev_upr == 0.05 ~ "<5%",
+                                       max_tf_prev_upr == 0.099 ~ "5-10%",
+                                       max_tf_prev_upr == 0.299 ~ "10-30%",
+                                       max_tf_prev_upr == 0.499 ~ "30-50%",
+                                       max_tf_prev_upr == 1 ~ "50-100%"),levels=c("<5%","5-10%","10-30%","30-50%","50-100%")))
+
+
+median_simulated_prev_allIUs_filled = st_as_sf(
+    data.frame(
+      IU_ID = rep(rep(IUs,each=3),5),
+      survey_type = rep(rep(c("first baseline","first impact","first surveillance"),length(IUs)),5),
+      prevalence_band = factor(rep(levels(first_surveys_exceedence$prevalence_band),each=(length(IUs)*3)),levels=c("<5%","5-10%","10-30%","30-50%","50-100%"))) %>%
+    left_join(first_surveys_median) %>%
+    left_join(shape,by="IU_ID")
+)
+
+ggplot(data=median_simulated_prev_allIUs_filled) +
+  geom_sf(aes(fill=median_sim_prev),lwd=0) +
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  labs(fill="Median simulated prevalence") +
+  theme(legend.position = "bottom") +
+  facet_grid(prevalence_band~survey_type)
+```
+
+
+
+## Median beta **at the time of 1st survey per IU**
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=12, fig.width=8}
+
+first_surveys_beta = prob_exceedence_allIUs_melt %>%
+  group_by(IU_ID,max_type_prevalence_num) %>%
+  summarise(first_year_by_type = min(Year))  %>%
+  left_join(prob_exceedence_allIUs_melt %>% select(IU_ID,Year,max_tf_prev_upr,max_type_prevalence_num,median_beta1996,median_beta2000,median_beta2010,median_beta2020,median_reduction2020,failed_survey_type), by=c("IU_ID","max_type_prevalence_num","first_year_by_type"="Year")) %>%
+    mutate(survey_type = case_when(max_type_prevalence_num == 0 ~ "first baseline",
+                                   max_type_prevalence_num == 1 ~ "first impact",
+                                   max_type_prevalence_num == 2 ~ "first surveillance"),
+           prevalence_band = factor(case_when(max_tf_prev_upr == 0.05 ~ "<5%",
+                                       max_tf_prev_upr == 0.099 ~ "5-10%",
+                                       max_tf_prev_upr == 0.299 ~ "10-30%",
+                                       max_tf_prev_upr == 0.499 ~ "30-50%",
+                                       max_tf_prev_upr == 1 ~ "50-100%"),levels=c("<5%","5-10%","10-30%","30-50%","50-100%")),
+           survey_year_beta = case_when(first_year_by_type<2000 ~ median_beta1996,
+                                     first_year_by_type>=2000 & first_year_by_type<2010 & !is.na(median_beta2000) ~ median_beta2000,
+                                     first_year_by_type>=2010 & first_year_by_type<2020 & !is.na(median_beta2010) ~ median_beta2010,
+                                     first_year_by_type>=2020 & !is.na(median_beta2020) ~ median_beta2020,
+                                     .default = median_beta1996))
+
+
+beta_allIUs_filled = st_as_sf(
+    data.frame(
+      IU_ID = rep(rep(IUs,each=3),5),
+      survey_type = rep(rep(c("first baseline","first impact","first surveillance"),length(IUs)),5),
+      prevalence_band = factor(rep(levels(first_surveys_beta$prevalence_band),each=(length(IUs)*3)),levels=c("<5%","5-10%","10-30%","30-50%","50-100%"))) %>%
+    left_join(first_surveys_beta) %>%
+    left_join(shape,by="IU_ID")
+)
+
+
+ggplot(data=beta_allIUs_filled) +
+  geom_sf(aes(fill=survey_year_beta),lwd=0) +
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  labs(fill="Median beta at 1st survey year") +
+  theme(legend.position = "bottom") +
+  facet_grid(prevalence_band~survey_type)
+
+
+```
+
+
+## Median beta **by year that change occurred in the model**
+
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=12, fig.width=8}
+ggplot(data=beta_allIUs_filled) +
+  geom_sf(aes(fill=median_beta1996),lwd=0) +
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  labs(fill="Median baseline beta") +
+  theme(legend.position = "bottom") +
+  facet_grid(prevalence_band~survey_type)
+```
+
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=12, fig.width=8}
+ggplot(data=beta_allIUs_filled) +
+  geom_sf(aes(fill=median_beta2020),lwd=0) +
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  labs(fill="Median beta in 2020") +
+  theme(legend.position = "bottom") +
+  facet_grid(prevalence_band~survey_type)
+```
+
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.height=12, fig.width=8}
+ggplot(data=beta_allIUs_filled) +
+  geom_sf(aes(fill=median_reduction2020),lwd=0) +
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  labs(fill="Median reduction in beta by 2020") +
+  theme(legend.position = "bottom") +
+  facet_grid(prevalence_band~survey_type)
+
+```
+
+
+
+# Disaggregate failed IUs
+
+## IUs that failed at least 1 impact survey
+
+- Separated by whether or not the last survey (of any type) was passed after failing at least 1 impact survey
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.width=8,fig.height=8}
+# failed impact
+failed_impact_survey = surveys %>%
+  mutate(failed_impact_survey = max_type_prevalence_num %in% c(1) & max_tf_prev_upr>0.05,
+         IU_ID = as.character(IU_ID)) %>%
+  filter(IU_ID %in% (summary_with_flags$IU_ID)) %>%
+  left_join(latest_tf) %>%
+  filter(failed_impact_survey==T) %>%
+  mutate(last_survey_passed = ifelse(last_max_tf_prev_upr==0.05,1,0),
+         failed_prev = ifelse(length(which(!is.na(max_tf_prev_upr)))>0,min(max_tf_prev_upr, na.rm=T),NA)) %>%
+  group_by(IU_ID) %>%
+  summarise(last_survey_passed = max(last_survey_passed),
+            surveys_failed = n(),
+            min_failed_prev = min(failed_prev),
+            max_failed_prev = max(failed_prev),
+            median_failed_prev = median(failed_prev)) %>%
+  left_join(beta_melt %>% select(IU_ID,year,beta) %>% filter(year %in% c(1996,2020)))
+
+
+failed_impact_survey_filled = st_as_sf(
+    data.frame(
+      IU_ID = rep(rep(IUs,each=2),2),
+      year= rep(rep(c(1996,2020),length(IUs)),2),
+      last_survey_passed = rep(c(0,1),each=(length(IUs)*4))) %>%
+    left_join(failed_impact_survey) %>%
+    left_join(shape,by="IU_ID") %>%
+    mutate(last_survey_passed = ifelse(last_survey_passed==0,"last survey failed","last survey passed"))
+)
+
+ggplot(data=failed_impact_survey_filled) +
+  geom_sf(aes(fill=beta),lwd=0) +
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  theme(legend.position = "bottom") +
+  labs(fill="Median beta") +
+  facet_grid(year~last_survey_passed)
+```
+
+
+## IUs that failed at least 1 surveillance survey
+
+- Separated by whether or not the last survey (of any type) was passed after failing at least 1 surveillance survey
+
+
+```{r,message=FALSE,warning=FALSE,out.width="100%",fig.width=8,fig.height=8}
+#failed surveilance
+failed_surveillance_survey = surveys %>%
+  mutate(failed_surveillance_survey = max_type_prevalence_num %in% c(2) & max_tf_prev_upr>0.05,
+         IU_ID = as.character(IU_ID)) %>%
+  filter(IU_ID %in% (summary_with_flags$IU_ID)) %>%
+  left_join(latest_tf) %>%
+  filter(failed_surveillance_survey==T ) %>%
+  mutate(last_survey_passed = ifelse(last_max_tf_prev_upr==0.05,1,0),
+         failed_prev = ifelse(length(which(!is.na(max_tf_prev_upr)))>0,min(max_tf_prev_upr, na.rm=T),NA)) %>%
+  group_by(IU_ID) %>%
+  summarise(last_survey_passed = max(last_survey_passed),
+            surveys_failed = n(),
+            min_failed_prev = min(failed_prev),
+            max_failed_prev = max(failed_prev),
+            median_failed_prev = median(failed_prev)) %>%
+  left_join(beta_melt %>% select(IU_ID,year,beta) %>% filter(year %in% c(1996,2020)))
+
+
+failed_surveillance_survey_filled = st_as_sf(
+    data.frame(
+      IU_ID = rep(rep(IUs,each=2),2),
+      year= rep(rep(c(1996,2020),length(IUs)),2),
+      last_survey_passed = rep(c(0,1),each=(length(IUs)*4))) %>%
+    left_join(failed_surveillance_survey) %>%
+    left_join(shape,by="IU_ID") %>%
+    mutate(last_survey_passed = ifelse(last_survey_passed==0,"last survey failed","last survey passed"))
+)
+
+ggplot(data=failed_surveillance_survey_filled) +
+  geom_sf(aes(fill=beta),lwd=0) +
+  scale_fill_viridis(option="D", direction = 1, na.value="gray80")  +
+  theme(legend.position = "bottom") +
+  labs(fill="Median beta") +
+  facet_grid(year~last_survey_passed)
+
+```
+
+
+
