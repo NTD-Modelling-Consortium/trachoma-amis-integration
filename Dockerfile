@@ -41,13 +41,12 @@ RUN conda install --yes --name base \
         r-hmisc \
         r-mclust \
         r-mnormt \
-        r-rcpp \
-        r-rcpparmadillo \
         r-optparse \
-        r-sf
+        r-sf \
+        r-renv && \
+        conda clean -a -y
 
 RUN Rscript -e "install.packages('AMISforInfectiousDiseases', repos='https://cloud.r-project.org/', lib='/opt/conda/lib/R/library/')"
-RUN conda clean -a -y
 
 # Verify installations
 RUN R --version && python --version
