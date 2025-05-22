@@ -8,7 +8,19 @@ import os
 import pandas as pd
 import argparse
 from typing import Optional
+from pathlib import Path
 
+PATH_TO_WORKING_DIR = Path(os.getenv("TRACHOMA_AMIS_DIR", ""))
+PATH_TO_MODEL_DIR = Path(os.getenv("TRACHOMA_MODEL_DIR", ""))
+
+if not PATH_TO_WORKING_DIR or not PATH_TO_MODEL_DIR:
+    raise ValueError(
+        """Please check environment variables are defined - 
+                       'TRACHOMA_AMIS_DIR',
+                       'TRACHOMA_MODEL_DIR' """
+    )
+
+PATH_TO_MAPS = PATH_TO_WORKING_DIR / "Maps"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--folder-id", required=True, help="Folder ID for outputs")
@@ -222,7 +234,7 @@ def getResultsNTDMC(results, Start_date, burnin):
     This is the section which needs the most editing for each IU
 """
 
-pathCountry = "../Maps/table_iu_idx_trachoma.csv"  # some path here
+pathCountry = PATH_TO_MAPS / "table_iu_idx_trachoma.csv"  # some path here
 df_IU_country = pd.read_csv(pathCountry)
 iu = df_IU_country["IU_ID"].values[int(IU_SLURM)]
 country = df_IU_country["country"].values[int(IU_SLURM)]
@@ -241,7 +253,7 @@ print(str(iu).zfill(5))
 """
 
 print("Making projections for trachoma for IU " + str(iu).zfill(5) + "...")
-mda_filepath = "endgame_inputs/InputMDA_MTP_projections_" + str(iu) + ".csv"
+mda_filepath = PATH_TO_MODEL_DIR / f"endgame_inputs/InputMDA_MTP_projections_{iu}.csv"
 
 
 """
@@ -249,13 +261,13 @@ mda_filepath = "endgame_inputs/InputMDA_MTP_projections_" + str(iu) + ".csv"
 """
 # ParamFilePath = '~/Documents/trachoma/post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_' + str(iu) + '.csv'
 ParamFilePath = (
-    f"projections/{SPECIES}/"
-    + str(folder_id)
-    + f"/{country}/{country}"
-    + str(iu).zfill(5)
-    + f"/InputBet_{country}"
-    + str(iu).zfill(5)
-    + ".csv"
+    PATH_TO_MODEL_DIR
+    / "projections"
+    / SPECIES
+    / str(folder_id)
+    / country
+    / f"{country}{str(iu).zfill(5)}"
+    / f"InputBet_{country}{str(iu).zfill(5)}.csv"
 )
 print(ParamFilePath)
 amisparams = pd.read_csv(ParamFilePath)
@@ -349,13 +361,13 @@ simData = [item[0] for item in results]
 
 # want outputs like <ascaris-folder>/AGO/AGO02049/Asc_AGO02049.p
 newOutputSimDataFilePath = (
-    f"projections/trachoma/"
-    + str(folder_id)
-    + f"/{country}/{country}"
-    + str(iu).zfill(5)
-    + f"/{SPECIES_PREFIX}{country}"
-    + str(iu).zfill(5)
-    + ".p"
+    PATH_TO_MODEL_DIR
+    / "projections"
+    / SPECIES
+    / str(folder_id)
+    / country
+    / f"{country}{str(iu).zfill(5)}"
+    / f"{SPECIES_PREFIX}{country}{str(iu).zfill(5)}.p"
 )
 # newOutputSimDataFilePath = "pickleETC.p"
 
@@ -390,13 +402,13 @@ pickle.dump(subset_sim_data, open(newOutputSimDataFilePath, "wb"))
 NTDMC = getResultsNTDMC(results, START_DATE, sim_params["burnin"])
 
 PrevDatasetFilePath = (
-    f"projections/trachoma/"
-    + str(folder_id)
-    + f"/{country}/{country}"
-    + str(iu).zfill(5)
-    + f"/PrevDataset_{SPECIES_PREFIX}{country}"
-    + str(iu).zfill(5)
-    + ".csv"
+    PATH_TO_MODEL_DIR
+    / "projections"
+    / SPECIES
+    / str(folder_id)
+    / country
+    / f"{country}{str(iu).zfill(5)}"
+    / f"PrevDataset_{SPECIES_PREFIX}{country}{str(iu).zfill(5)}.csv"
 )
 # PrevDatasetFilePath = "NTDMCETC.csv"
 print("PrevDataset_species_iu.csv file name:")
