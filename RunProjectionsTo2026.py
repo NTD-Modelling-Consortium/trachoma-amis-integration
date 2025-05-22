@@ -6,14 +6,34 @@ import numpy as np
 import time
 import os
 import pandas as pd
+import argparse
+from typing import Optional
 
 
-folder_id = "source-data-20250220"  # needs to be manually changed if multiple batches to be run due to not enough storage. if so, must run some batches, send to cloud, delete, repeat
-species = "trachoma"
-species_prefix = "Trachoma_"
-IU_SLURM = os.getenv("SLURM_ARRAY_TASK_ID")
-num_cores = 10
-distToUse = "Expo"
+parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--folder-id", required=True, help="Folder ID for outputs")
+parser.add_argument("-i", "--id", required=False, help="SLURM array task ID")
+parser.add_argument(
+    "--num-cores", type=int, default=10, help="Number of CPU cores to use"
+)
+parser.add_argument(
+    "--stop-importation",
+    action="store_true",
+    help="Stop importation of infections based on IU-specific year",
+)
+args = parser.parse_args()
+
+folder_id = args.folder_id
+IU_SLURM = args.iu_slurm if args.iu_slurm else os.getenv("SLURM_ARRAY_TASK_ID")
+if IU_SLURM is None:
+    raise ValueError(
+        "Must provide --iu-slurm or set SLURM_ARRAY_TASK_ID environment variable"
+    )
+num_cores = args.num_cores
+
+SPECIES = "trachoma"
+SPECIES_PREFIX = "Trachoma_"
+DIST_TO_USE = "Expo"
 
 start = time.time()
 
@@ -206,8 +226,11 @@ pathCountry = "../Maps/table_iu_idx_trachoma.csv"  # some path here
 df_IU_country = pd.read_csv(pathCountry)
 iu = df_IU_country["IU_ID"].values[int(IU_SLURM)]
 country = df_IU_country["country"].values[int(IU_SLURM)]
-# get the year that the importation should stop from the IU data (assuming the column is called 'stop_importation_year')
-Stop_importation_year = df_IU_country["stop_importation_year"].values[int(IU_SLURM)]
+
+Stop_importation_year: Optional[int] = None
+if args.stop_importation:
+    # get the year that the importation should stop from the IU data (assuming the column is called 'stop_importation_year')
+    Stop_importation_year = df_IU_country["stop_importation_year"].values[int(IU_SLURM)]
 
 print(country)
 print(str(iu).zfill(5))
@@ -226,11 +249,11 @@ mda_filepath = "endgame_inputs/InputMDA_MTP_projections_" + str(iu) + ".csv"
 """
 # ParamFilePath = '~/Documents/trachoma/post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_' + str(iu) + '.csv'
 ParamFilePath = (
-    f"projections/{species}/"
+    f"projections/{SPECIES}/"
     + str(folder_id)
     + f"/{country}/{country}"
     + str(iu).zfill(5)
-    + f"/InputBeta_{species_prefix}{country}"
+    + f"/InputBet_{country}"
     + str(iu).zfill(5)
     + ".csv"
 )
@@ -274,11 +297,13 @@ outputTimes = get_Intervention_times(
     sim_params["burnin"],
 )
 
-# convert the calendar year that the importation should stop to a simulation time
-Stop_importation_date = getOutputTimes([Stop_importation_year])
-timeToStopImportation = get_Intervention_times(
-    Stop_importation_date, START_DATE, sim_params["burnin"]
-)[0]
+timeToStopImportation = -1  # Disable stop-importation feature
+if args.stop_importation:
+    # convert the calendar year that the importation should stop to a simulation time
+    Stop_importation_date = getOutputTimes([Stop_importation_year])
+    timeToStopImportation = get_Intervention_times(
+        Stop_importation_date, START_DATE, sim_params["burnin"]
+    )[0]
 
 
 def do_single_run(seed, beta, coverage, k_parameter, i, timeToStopImportation):
@@ -303,7 +328,7 @@ def do_single_run(seed, beta, coverage, k_parameter, i, timeToStopImportation):
         numpy_state=random_state,
         doIHMEOutput=False,
         doSurvey=False,
-        distToUse=distToUse,
+        distToUse=DIST_TO_USE,
         postMDAImportationReduction=True,
         timeToStopImportation=timeToStopImportation,
     )
@@ -328,7 +353,7 @@ newOutputSimDataFilePath = (
     + str(folder_id)
     + f"/{country}/{country}"
     + str(iu).zfill(5)
-    + f"/{species_prefix}{country}"
+    + f"/{SPECIES_PREFIX}{country}"
     + str(iu).zfill(5)
     + ".p"
 )
@@ -369,7 +394,7 @@ PrevDatasetFilePath = (
     + str(folder_id)
     + f"/{country}/{country}"
     + str(iu).zfill(5)
-    + f"/PrevDataset_{species_prefix}{country}"
+    + f"/PrevDataset_{SPECIES_PREFIX}{country}"
     + str(iu).zfill(5)
     + ".csv"
 )
@@ -378,7 +403,7 @@ print("PrevDataset_species_iu.csv file name:")
 print(PrevDatasetFilePath)
 NTDMC.to_csv(PrevDatasetFilePath, index=False)
 
-print("Finished projections for " + str(species) + " in IU " + str(iu) + ".")
+print("Finished projections for " + str(SPECIES) + " in IU " + str(iu) + ".")
 
 #################################################################################################################
 
