@@ -63,4 +63,4 @@ if [ ! -z "$STOP_IMPORTATION" ]; then
 fi
 
 # Execute the command
-$CMD
+conda run $CMD
