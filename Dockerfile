@@ -6,6 +6,9 @@ FROM continuumio/miniconda3:latest
 SHELL [ "/bin/bash", "-c" ]
 ARG DEBIAN_FRONTEND=noninteractive
 
+ARG TRACHOMA_AMIS_DIR=/ntdmc/trachoma-amis-integration
+ARG TRACHOMA_MODEL_DIR=${TRACHOMA_AMIS_DIR}/model/ntd-model-trachoma
+
 RUN apt update && apt install -y \
         build-essential \
         cmake \
@@ -13,10 +16,12 @@ RUN apt update && apt install -y \
         curl \
         git \
         unzip \
-        openssh-client
+        openssh-client \
+        libssl-dev \
+        libgdal-dev \
+        libudunits2-dev
 
 RUN conda config --add channels conda-forge --add channels defaults --add channels r
-
 RUN conda install --yes --name base \
         python=3.10 \
         r-base \
@@ -32,45 +37,29 @@ RUN conda install --yes --name base \
         r-mclust \
         r-mnormt \
         r-rcpp \
-        r-rcpparmadillo
+        r-rcpparmadillo \
+        r-optparse \
+        r-sf
 
 RUN Rscript -e "install.packages('AMISforInfectiousDiseases', repos='https://cloud.r-project.org/', lib='/opt/conda/lib/R/library/')"
 RUN conda clean -a -y
 
-RUN curl -sSL https://install.python-poetry.org | python3 -
-ENV PATH="/root/.local/bin:$PATH"
-
 # Verify installations
-RUN R --version && python --version && poetry --version
-
-ARG TRACHOMA_AMIS_DIR=/ntdmc/trachoma-amis-integration
-ARG TRACHOMA_MODEL_DIR=${TRACHOMA_AMIS_DIR}/model/ntd-model-trachoma
-ARG FITTING_PREP_DIR=${TRACHOMA_AMIS_DIR}/fitting-prep
-ARG FITTING_DIR=${TRACHOMA_AMIS_DIR}/fitting
-ARG PROJECTIONS_PREP_DIR=${TRACHOMA_AMIS_DIR}/projections-prep
-ARG PROJECTIONS_DIR=${TRACHOMA_AMIS_DIR}/projections
-
-RUN mkdir -p ${FITTING_PREP_DIR}/{inputs,artefacts,scripts} && \
-        mkdir -p ${FITTING_PREP_DIR}/artefacts/{Maps,model_output} && \
-        mkdir -p ${FITTING_DIR}/{inputs,artefacts,scripts} && \
-        mkdir -p ${PROJECTIONS_PREP_DIR}/{inputs,artefacts,scripts} && \
-        mkdir -p ${PROJECTIONS_DIR}/{inputs,artefacts,scripts}
+RUN R --version && python --version
 
 # https://medium.com/datamindedbe/how-to-access-private-data-and-git-repositories-with-ssh-while-building-a-docker-image-a-ea283c0b4272
 RUN mkdir -p -m 0600 ~/.ssh && \
         ssh-keyscan github.com >> ~/.ssh/known_hosts
 
+ADD git@github.com:NTD-Modelling-Consortium/trachoma-amis-integration.git ${TRACHOMA_AMIS_DIR}
 # Get trachoma model
-ADD git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git ${TRACHOMA_AMIS_DIR}/model/ntd-model-trachoma
+ADD git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git ${TRACHOMA_MODEL_DIR}
+RUN cd ${TRACHOMA_MODEL_DIR} && git checkout acf7d8b
 
 WORKDIR ${TRACHOMA_AMIS_DIR}
 
 # Install the trachoma model
-RUN cd ${TRACHOMA_MODEL_DIR} && \
-        python -m venv .venv && \
-        source .venv/bin/activate && \
-        pip install ${TRACHOMA_MODEL_DIR}
-
-
+RUN --mount=type=cache,target=/root/.cache/pip cd ${TRACHOMA_MODEL_DIR} && pip install .
+RUN --mount=type=cache,target=/root/.cache/pip pip install .
 
 ENTRYPOINT [ "bash" ]

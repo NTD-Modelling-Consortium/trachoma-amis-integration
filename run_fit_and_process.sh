@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Parse named arguments
+while [ $# -gt 0 ]; do
+    case "$1" in
+    --id=*)
+        ID="${1#*=}"
+        ;;
+    --failed-ids=*)
+        FAILED_IDS="${1#*=}"
+        ;;
+    --folder-id=*)
+        FOLDER_ID="${1#*=}"
+        ;;
+    --help)
+        echo "Usage: $0 [options]"
+        echo ""
+        echo "Required arguments:"
+        echo "  --id=<id>              ID for fitting and processing"
+        echo "  --folder-id=<folder>   Folder ID for realocation (e.g., 'source-data-20250220')"
+        echo ""
+        echo "Optional arguments:"
+        echo "  --failed-ids=<ids>     Comma-separated list of failed IDs to skip"
+        echo "  --help                 Show this help message"
+        exit 0
+        ;;
+    *)
+        echo "Error: Invalid argument $1"
+        echo "Run '$0 --help' for usage information"
+        exit 1
+        ;;
+    esac
+    shift
+done
+
+# Check required arguments
+if [ -z "$ID" ]; then
+    echo "Error: --id is required"
+    echo "Run '$0 --help' for usage information"
+    exit 1
+fi
+
+if [ -z "$FOLDER_ID" ]; then
+    echo "Error: --folder-id is required"
+    echo "Run '$0 --help' for usage information"
+    exit 1
+fi
+
+# Build command arguments for preprocess and realocate scripts
+COMMON_ARGS=""
+if [ ! -z "$FAILED_IDS" ]; then
+    COMMON_ARGS="$COMMON_ARGS --failed-ids=$FAILED_IDS"
+fi
+
+# Run the R scripts in sequence
+echo "Running trachoma fitting..."
+Rscript trachoma_fitting.R --id=$ID
+
+echo "Running preprocessing for projections..."
+Rscript preprocess_for_projections.R --id=$ID $COMMON_ARGS
+
+echo "Running realocation for projections..."
+Rscript realocate_InputPars_MTP.R --id=$ID $COMMON_ARGS --folder-id=$FOLDER_ID
