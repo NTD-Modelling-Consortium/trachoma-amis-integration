@@ -82,7 +82,34 @@ if (!dir.exists(kPathToEndgameInputs)) {
   dir.create(kPathToEndgameInputs, recursive = T)
 }
 
+process_all_batches <- function(id_vec) {
+  cat(sprintf("num_batches: %d\n", length(id_vec)))
 
+  for (id in id_vec) {
+    process_batch(id)
+  }
+}
+
+process_batch <- function(id) {
+  iu_file <- file.path(kPathToEndgameInputs, paste0("IUs_MTP_", id, ".csv"))
+  ius_per_batch <- iu_task_lookup %>%
+    filter(TaskID == id)
+  ius <- matrix(ius_per_batch$IU_ID, ncol = 1)
+  write.table(ius, file = iu_file, row.names = F, col.names = F, quote = F, sep = ",") # write input parameter file
+
+  for (iu in ius) {
+    mda_cov_iu <- coverage_wide %>%
+      filter(IU_ID == iu) %>%
+      select(-IU_ID)
+
+    mda_cov_iu_xl <- rbind(colnames(mda_cov_iu), mda_cov_iu) %>%
+      mutate_at(vars(starts_with(c("19", "20"))), as.numeric)
+
+    # The first year columns must be a numeric integer for it to be read correctly into python!!
+    mda_path <- file.path(kPathToEndgameInputs, paste0("InputMDA_MTP_projections_", iu, ".csv"))
+    write.table(mda_cov_iu_xl, file = mda_path, col.names = F, row.names = F, sep = ",") # write input MDA file
+  }
+}
 option_list <- list(
   make_option(c("-i", "--id"),
     type = "integer",
@@ -134,34 +161,3 @@ table_iu_idx <- table_iu_idx %>%
   left_join(last_survey_year)
 
 write.csv(table_iu_idx, file = file.path(kPathToMaps, "table_iu_idx_trachoma.csv"), row.names = F)
-
-
-
-process_all_batches <- function(id_vec) {
-  cat(sprintf("num_batches: %d\n", length(id_vec)))
-
-  for (id in id_vec) {
-    process_batch(id)
-  }
-}
-
-process_batch <- function(id) {
-  iu_file <- file.path(kPathToEndgameInputs, paste0("IUs_MTP_", id, ".csv"))
-  ius_per_batch <- iu_task_lookup %>%
-    filter(TaskID == id)
-  ius <- matrix(ius_per_batch$IU_ID, ncol = 1)
-  write.table(ius, file = iu_file, row.names = F, col.names = F, quote = F, sep = ",") # write input parameter file
-
-  for (iu in ius) {
-    mda_cov_iu <- coverage_wide %>%
-      filter(IU_ID == iu) %>%
-      select(-IU_ID)
-
-    mda_cov_iu_xl <- rbind(colnames(mda_cov_iu), mda_cov_iu) %>%
-      mutate_at(vars(starts_with(c("19", "20"))), as.numeric)
-
-    # The first year columns must be a numeric integer for it to be read correctly into python!!
-    mda_path <- file.path(kPathToEndgameInputs, paste0("InputMDA_MTP_projections_", iu, ".csv"))
-    write.table(mda_cov_iu_xl, file = mda_path, col.names = F, row.names = F, sep = ",") # write input MDA file
-  }
-}

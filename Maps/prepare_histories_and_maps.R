@@ -201,27 +201,6 @@ if (!dir.exists(kPathToEndgameInputs)) {
   dir.create(kPathToEndgameInputs, recursive = T)
 }
 
-option_list <- list(
-  make_option(c("-i", "--id"),
-    type = "integer",
-    help = "Single ID to process. If not provided, will process all IDs"
-  )
-)
-
-# Parse command line arguments
-opt_parser <- OptionParser(option_list = option_list)
-opts <- parse_args(opt_parser)
-
-
-if (!is.null(opts$id)) {
-  cat(sprintf("Processing single batch ID: %d\n", opts$id))
-  process_batch(opts$id)
-} else {
-  id_vec <- 1:max(iu_task_lookup$TaskID)
-  cat("Processing all batch IDs\n")
-  process_all_batches(id_vec)
-}
-
 process_all_batches <- function(id_vec) {
   num_batches <- max(iu_task_lookup$TaskID)
   cat(sprintf("num_batches: %d\n", num_batches))
@@ -250,4 +229,25 @@ process_batch <- function(id) {
     mda_path <- file.path(kPathToEndgameInputs, paste0("InputMDA_MTP_", id, ".csv"))
     write.table(mda_cov_iu_xl, file = mda_path, col.names = F, row.names = F, sep = ",") # write input MDA file
   }
+}
+
+option_list <- list(
+  make_option(c("-i", "--id"),
+    type = "integer",
+    help = "Single ID to process. If not provided, will process all IDs"
+  )
+)
+
+# Parse command line arguments
+opt_parser <- OptionParser(option_list = option_list)
+opts <- parse_args(opt_parser)
+
+
+if (!is.null(opts$id)) {
+  cat(sprintf("Processing single batch ID: %d\n", opts$id))
+  process_batch(opts$id)
+} else {
+  id_vec <- 1:max(iu_task_lookup$TaskID)
+  cat("Processing all batch IDs\n")
+  process_all_batches(id_vec)
 }

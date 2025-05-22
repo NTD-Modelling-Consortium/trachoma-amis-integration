@@ -9,6 +9,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG TRACHOMA_AMIS_DIR=/ntdmc/trachoma-amis-integration
 ARG TRACHOMA_MODEL_DIR=${TRACHOMA_AMIS_DIR}/model/ntd-model-trachoma
 
+ENV TRACHOMA_AMIS_DIR=${TRACHOMA_AMIS_DIR}
+ENV TRACHOMA_MODEL_DIR=${TRACHOMA_MODEL_DIR}
+
 RUN apt update && apt install -y \
         build-essential \
         cmake \
@@ -51,9 +54,10 @@ RUN R --version && python --version
 RUN mkdir -p -m 0600 ~/.ssh && \
         ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-ADD git@github.com:NTD-Modelling-Consortium/trachoma-amis-integration.git ${TRACHOMA_AMIS_DIR}
+ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/trachoma-amis-integration.git#256-trachoma-fit-docker-container ${TRACHOMA_AMIS_DIR}
+
 # Get trachoma model
-ADD git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git ${TRACHOMA_MODEL_DIR}
+ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git ${TRACHOMA_MODEL_DIR}
 RUN cd ${TRACHOMA_MODEL_DIR} && git checkout acf7d8b
 
 WORKDIR ${TRACHOMA_AMIS_DIR}

@@ -9,6 +9,68 @@ kPathToMaps <- file.path(kPathToWorkingDir, "Maps")
 kPathToPostAmisAnalysis <- file.path(kPathToWorkingDir, "post_AMIS_analysis")
 kPathToAmisOutput <- file.path(kPathToWorkingDir, "AMIS_output")
 
+create_directory_structure <- function(species) {
+  kPathToInputParsMTP <- file.path(kPathToPostAmisAnalysis, paste("InputPars_MTP_", species))
+  if (!dir.exists(kPathToInputParsMTP)) {
+    dir.create(kPathToInputParsMTP, recursive = T)
+  }
+}
+
+process_all_batches <- function(id_vec) {
+  sampled_params_all <- c()
+
+  # Process each batch ID
+  for (id in id_vec) {
+    #### Load AMIS output
+    amis_file_path <- file.path(kPathToAmisOutput, paste("amis_output", id, ".Rdata"))
+    if (!file.exists(amis_file_path)) {
+      cat(sprintf("Error: AMIS output file not found for ID: %d\n", id))
+      return(NULL)
+    }
+
+    load(amis_file_path) # loads amis_output
+    sampled_params_all <- rbind(
+      sampled_params_all,
+      process_batch(id, amis_output)
+    )
+
+    if (id %% 100 == 0) {
+      cat(paste0("id=", id, "; "))
+    }
+  }
+  sampled_params_all
+}
+
+process_batch <- function(id, amis_output_data) {
+  cat(sprintf("Processing batch ID: %d\n", id))
+
+  iu_names <- rownames(amis_output_data$prevalence_map[[1]]$data)
+  ess <- amis_output_data$ess
+
+  #### Sample draws from the posterior
+  num_sub_samples_posterior <- 200
+
+  sampled_params_all <- c()
+  for (iu in iu_names) {
+    if (ess[which(iu_names == iu)] >= 200) {
+      sampled_params <- sample_parameters(
+        x = amis_output,
+        n_samples = num_sub_samples_posterior,
+        locations = which(iu_names == iu)
+      )
+
+      # this puts all ius in the same folder
+      file_name <- file.path(kPathToInputParsMTP, paste0("InputPars_MTP_", iu, ".csv"))
+      write.csv(sampled_params, file = file_name, row.names = F)
+
+      sampled_params_iu <- cbind(IU_ID = iu, sampled_params)
+      sampled_params_all <- rbind(sampled_params_all, sampled_params_iu)
+    }
+  }
+
+  sampled_params_all
+}
+
 # Define command line options
 option_list <- list(
   make_option(c("-i", "--id"),
@@ -79,67 +141,4 @@ if (!is.null(opts$id)) {
   output_file <- file.path(kPathToInputParsMTP, "InputPars_MTP_allIUs.rds")
   save(sampled_params_all, file = output_file)
   cat(sprintf("Saved posterior parameter samples for all batches to: %s\n", output_file))
-}
-
-
-create_directory_structure <- function(species) {
-  kPathToInputParsMTP <- file.path(kPathToPostAmisAnalysis, paste("InputPars_MTP_", species))
-  if (!dir.exists(kPathToInputParsMTP)) {
-    dir.create(kPathToInputParsMTP, recursive = T)
-  }
-}
-
-process_all_batches <- function(id_vec) {
-  sampled_params_all <- c()
-
-  # Process each batch ID
-  for (id in id_vec) {
-    #### Load AMIS output
-    amis_file_path <- file.path(kPathToAmisOutput, paste("amis_output", id, ".Rdata"))
-    if (!file.exists(amis_file_path)) {
-      cat(sprintf("Error: AMIS output file not found for ID: %d\n", id))
-      return(NULL)
-    }
-
-    load(amis_file_path) # loads amis_output
-    sampled_params_all <- rbind(
-      sampled_params_all,
-      process_batch(id, amis_output)
-    )
-
-    if (id %% 100 == 0) {
-      cat(paste0("id=", id, "; "))
-    }
-  }
-  sampled_params_all
-}
-
-process_batch <- function(id, amis_output_data) {
-  cat(sprintf("Processing batch ID: %d\n", id))
-
-  iu_names <- rownames(amis_output_data$prevalence_map[[1]]$data)
-  ess <- amis_output_data$ess
-
-  #### Sample draws from the posterior
-  num_sub_samples_posterior <- 200
-
-  sampled_params_all <- c()
-  for (iu in iu_names) {
-    if (ess[which(iu_names == iu)] >= 200) {
-      sampled_params <- sample_parameters(
-        x = amis_output,
-        n_samples = num_sub_samples_posterior,
-        locations = which(iu_names == iu)
-      )
-
-      # this puts all ius in the same folder
-      file_name <- file.path(kPathToInputParsMTP, paste0("InputPars_MTP_", iu, ".csv"))
-      write.csv(sampled_params, file = file_name, row.names = F)
-
-      sampled_params_iu <- cbind(IU_ID = iu, sampled_params)
-      sampled_params_all <- rbind(sampled_params_all, sampled_params_iu)
-    }
-  }
-
-  sampled_params_all
 }

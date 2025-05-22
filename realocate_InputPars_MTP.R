@@ -31,59 +31,6 @@ n_timschange <- length(yearschange_index)
 
 kSpeciesAll <- c("trachoma")
 
-
-# Define command line options
-option_list <- list(
-  make_option(c("-i", "--id"),
-    type = "integer",
-    help = "Single ID to process. If not provided, will process all IDs"
-  ),
-  make_option(c("-s", "--species"),
-    type = "character",
-    default = "trachoma",
-    help = "Species to process [default=%default]"
-  ),
-  make_option(c("-f", "--failed-ids"),
-    type = "character",
-    default = "",
-    help = paste(
-      "Comma-separated list of failed IDs to skip.",
-      "Needs to be filled in once we know which batch-ids failed.",
-      "Will be ignored when a single ID is specified."
-    )
-  ),
-  make_option(c("-d", "--folder-id"),
-    type = "character",
-    help = "Example: 'source-data-20250220'."
-  )
-)
-
-# Parse command line arguments
-opt_parser <- OptionParser(option_list = option_list)
-opts <- parse_args(opt_parser)
-
-# Process failed IDs if provided
-failed_ids <- if (!is.null(opts$failed_ids)) {
-  as.numeric(strsplit(opts$failed_ids, ",")[[1]])
-} else {
-  c()
-}
-
-df_iu_country <- read.csv(file.path(kPathToMaps, "table_iu_idx_trachoma.csv"))
-countries <- sort(unique(df_iu_country$country))
-
-create_directory_structure(countries, kSpeciesAll)
-
-if (!is.null(opts$id)) {
-  # Process single ID
-  cat(sprintf("Processing single batch ID: %d\n", opts$id))
-  load(file.path(kPathToAmisOutput, paste("amis_output", id, ".Rdata")))
-  process_batch(opts$id, amis_output, df_iu_country, opts$folder_id)
-} else {
-  cat("Processing all batch IDs\n")
-  process_all_batches(df_iu_country, failed_ids, opts$folder_id)
-}
-
 create_directory_structure <- function(countries, species_list) {
   kPathToModelProjections <- file.path(kPathToModel, "projections")
 
@@ -181,4 +128,57 @@ process_batch <- function(id, amis_output_data, df_iu_country, folder_id, specie
       write.csv(sampled_params_full, file = file_name_new, row.names = F)
     }
   }
+}
+
+
+# Define command line options
+option_list <- list(
+  make_option(c("-i", "--id"),
+    type = "integer",
+    help = "Single ID to process. If not provided, will process all IDs"
+  ),
+  make_option(c("-s", "--species"),
+    type = "character",
+    default = "trachoma",
+    help = "Species to process [default=%default]"
+  ),
+  make_option(c("-f", "--failed-ids"),
+    type = "character",
+    default = "",
+    help = paste(
+      "Comma-separated list of failed IDs to skip.",
+      "Needs to be filled in once we know which batch-ids failed.",
+      "Will be ignored when a single ID is specified."
+    )
+  ),
+  make_option(c("-d", "--folder-id"),
+    type = "character",
+    help = "Example: 'source-data-20250220'."
+  )
+)
+
+# Parse command line arguments
+opt_parser <- OptionParser(option_list = option_list)
+opts <- parse_args(opt_parser)
+
+# Process failed IDs if provided
+failed_ids <- if (!is.null(opts$failed_ids)) {
+  as.numeric(strsplit(opts$failed_ids, ",")[[1]])
+} else {
+  c()
+}
+
+df_iu_country <- read.csv(file.path(kPathToMaps, "table_iu_idx_trachoma.csv"))
+countries <- sort(unique(df_iu_country$country))
+
+create_directory_structure(countries, kSpeciesAll)
+
+if (!is.null(opts$id)) {
+  # Process single ID
+  cat(sprintf("Processing single batch ID: %d\n", opts$id))
+  load(file.path(kPathToAmisOutput, paste("amis_output", id, ".Rdata")))
+  process_batch(opts$id, amis_output, df_iu_country, opts$folder_id)
+} else {
+  cat("Processing all batch IDs\n")
+  process_all_batches(df_iu_country, failed_ids, opts$folder_id)
 }
