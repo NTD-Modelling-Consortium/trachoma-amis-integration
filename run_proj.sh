@@ -63,4 +63,4 @@ if [ ! -z "$STOP_IMPORTATION" ]; then
 fi
 
 # Execute the command
-conda run $CMD
+conda run  --no-capture-output $CMD

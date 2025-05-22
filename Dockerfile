@@ -50,7 +50,7 @@ RUN conda install --yes --name base \
 # So instead adjust shell to run everything inside Conda
 # from here on out
 # https://pythonspeed.com/articles/activate-conda-dockerfile/
-SHELL ["conda", "run", "/bin/bash", "-c"]
+SHELL ["conda", "run", "--no-capture-output", "/bin/bash", "-c"]
 
 RUN Rscript -e "install.packages('AMISforInfectiousDiseases', repos='https://cloud.r-project.org/')"
 
@@ -73,4 +73,4 @@ WORKDIR ${TRACHOMA_AMIS_DIR}
 RUN --mount=type=cache,target=/root/.cache/pip cd ${TRACHOMA_MODEL_DIR} && pip install .
 RUN --mount=type=cache,target=/root/.cache/pip pip install .
 
-ENTRYPOINT [ "bash" ]
+ENTRYPOINT [ "conda", "run", "--no-capture-output", "/bin/bash" ]
