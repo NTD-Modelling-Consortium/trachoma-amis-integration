@@ -46,7 +46,13 @@ RUN conda install --yes --name base \
         r-renv && \
         conda clean -a -y
 
-RUN Rscript -e "install.packages('AMISforInfectiousDiseases', repos='https://cloud.r-project.org/', lib='/opt/conda/lib/R/library/')"
+# Cannot activate the conda environment easily
+# So instead adjust shell to run everything inside Conda
+# from here on out
+# https://pythonspeed.com/articles/activate-conda-dockerfile/
+SHELL ["conda", "run", "/bin/bash", "-c"]
+
+RUN Rscript -e "install.packages('AMISforInfectiousDiseases', repos='https://cloud.r-project.org/')"
 
 # Verify installations
 RUN R --version && python --version
