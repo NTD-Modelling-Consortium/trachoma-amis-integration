@@ -4,7 +4,7 @@ Scripts used for trachoma fitting and near term projections
 Things to note: 
 
 - Past version of projections was missing any MDA from 2022, and fits are missing many surveillance surveys. The latest version of these scripts (in `trachoma-amis-integration`) should be the correct version but they haven't been run
-- The last runs in Feb 2025 we done on the cloud (<https://github.com/NTD-Modelling-Consortium/trachoma-docker-temp>) 
+- The last runs in Feb 2025 were done on the cloud (<https://github.com/NTD-Modelling-Consortium/trachoma-docker-temp>), and for other previous runs the code is on the Oxford cluster
 - May want to consider running with sigma=0.025 where there are IUs with ESS<200 or batches that failed (we have done this for other diseases)
 
 ## Scripts
@@ -84,4 +84,4 @@ so that they are organised in the expected file hierarchy in the cloud.
 
 - **RunProjectionsTo2026_stop_importation.py**: runs the near term projections for each IU but stops importation after last survey year
 
-
+- Projections are done by IU (i.e. one array job per IU). Indexing for the array numbers of the projections starts from 0 and goes up to the total number of IUs
