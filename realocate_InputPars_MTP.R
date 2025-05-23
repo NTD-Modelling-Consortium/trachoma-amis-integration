@@ -176,7 +176,7 @@ create_directory_structure(countries, opts$folder_id, kSpeciesAll)
 if (!is.null(opts$id)) {
   # Process single ID
   cat(sprintf("Processing single batch ID: %d\n", opts$id))
-  load(file.path(kPathToAmisOutput, paste("amis_output", id, ".Rdata")))
+  load(file.path(kPathToAmisOutput, paste0("amis_output", id, ".Rdata")))
   process_batch(opts$id, amis_output, df_iu_country, opts$folder_id)
 } else {
   cat("Processing all batch IDs\n")

@@ -10,7 +10,7 @@ kPathToPostAmisAnalysis <- file.path(kPathToWorkingDir, "post_AMIS_analysis")
 kPathToAmisOutput <- file.path(kPathToWorkingDir, "AMIS_output")
 
 create_directory_structure <- function(species) {
-  kPathToInputParsMTP <- file.path(kPathToPostAmisAnalysis, paste("InputPars_MTP_", species))
+  kPathToInputParsMTP <- file.path(kPathToPostAmisAnalysis, paste0("InputPars_MTP_", species))
   if (!dir.exists(kPathToInputParsMTP)) {
     dir.create(kPathToInputParsMTP, recursive = T)
   }
@@ -22,7 +22,7 @@ process_all_batches <- function(id_vec) {
   # Process each batch ID
   for (id in id_vec) {
     #### Load AMIS output
-    amis_file_path <- file.path(kPathToAmisOutput, paste("amis_output", id, ".Rdata"))
+    amis_file_path <- file.path(kPathToAmisOutput, paste0("amis_output", id, ".Rdata"))
     if (!file.exists(amis_file_path)) {
       cat(sprintf("Error: AMIS output file not found for ID: %d\n", id))
       return(NULL)
@@ -127,9 +127,10 @@ load(file.path(kPathToMaps, "iu_task_lookup.Rdata"))
 create_directory_structure(species = opts$species)
 if (!is.null(opts$id)) {
   # Process single ID
-  sampled_params_all <- process_batch(opts$id)
+  load(file.path(kPathToAmisOutput, paste0("amis_output", opts$id, ".Rdata")))
+  sampled_params_all <- process_batch(opts$id, amis_output)
   if (!is.null(sampled_params_all)) {
-    output_file <- paste("InputPars_MTP_", opts$id, ".rds")
+    output_file <- paste0("InputPars_MTP_", opts$id, ".rds")
     save(sampled_params_all, file.path(kPathToInputParsMTP, output_file))
     cat(sprintf("Saved posterior parameter samples for single batch [%d] to: %s\n", opts$id, output_file))
   }

@@ -22,9 +22,11 @@ __all__ = ["build_transmission_model"]
 START_DATE = date(1996, 1, 1)
 
 id = os.getenv("SLURM_ARRAY_TASK_ID")
-mda_filepath = (
-    Path(os.getenv("TRACHOMA_MODEL_DIR", ".")) / f"endgame_inputs/InputMDA_MTP_{id}.csv"
+PATH_TO_MODEL = Path(os.getenv("TRACHOMA_MODEL_DIR", "."))
+PATH_TO_ENDGAME_INPUTS = (
+    PATH_TO_MODEL / "trachoma" / "data" / "coverage" / "endgame_inputs"
 )
+mda_filepath = PATH_TO_ENDGAME_INPUTS / f"InputMDA_MTP_{id}.csv"
 distToUse = "Expo"
 
 

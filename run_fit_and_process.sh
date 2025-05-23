@@ -56,10 +56,10 @@ export SLURM_ARRAY_TASK_ID=$ID
 
 # Run the R scripts in sequence
 echo "Running trachoma fitting..."
-Rscript trachoma_fitting.R --id=$ID
+Rscript trachoma_fitting.R --id=$ID || exit 1
 
 echo "Running preprocessing for projections..."
-Rscript preprocess_for_projections.R --id=$ID $COMMON_ARGS
+Rscript preprocess_for_projections.R --id=$ID $COMMON_ARGS || exit 1
 
 echo "Running realocation for projections..."
-Rscript realocate_InputPars_MTP.R --id=$ID $COMMON_ARGS --folder-id=$FOLDER_ID
+Rscript realocate_InputPars_MTP.R --id=$ID $COMMON_ARGS --folder-id=$FOLDER_ID || exit 1
