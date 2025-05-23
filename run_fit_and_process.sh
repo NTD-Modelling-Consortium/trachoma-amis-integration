@@ -9,6 +9,9 @@ while [ $# -gt 0 ]; do
     --failed_ids=*)
         FAILED_IDS="${1#*=}"
         ;;
+    --amis_sigma=*)
+        AMIS_SIGMA="${1#*=}"
+        ;;
     --folder_id=*)
         FOLDER_ID="${1#*=}"
         ;;
@@ -21,6 +24,7 @@ while [ $# -gt 0 ]; do
         echo ""
         echo "Optional arguments:"
         echo "  --failed_ids=<ids>     Comma-separated list of failed IDs to skip"
+        echo "  --amis_sigma=<number>       AMIS 'sigma' parameter, expects a floating point number"
         echo "  --help                 Show this help message"
         exit 0
         ;;
@@ -56,7 +60,11 @@ export SLURM_ARRAY_TASK_ID=$ID
 
 # Run the R scripts in sequence
 echo "Running trachoma fitting..."
-Rscript trachoma_fitting.R --id=$ID || exit 1
+if [ ! -z "$AMIS_SIGMA" ]; then
+    Rscript trachoma_fitting.R --id=$ID --amis_sigma=$AMIS_SIGMA || exit 1
+else
+    Rscript trachoma_fitting.R --id=$ID || exit 1
+fi
 
 echo "Running preprocessing for projections..."
 Rscript preprocess_for_projections.R --id=$ID $COMMON_ARGS || exit 1

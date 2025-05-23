@@ -12,6 +12,11 @@ option_list <- list(
   make_option(c("-i", "--id"),
     type = "integer",
     help = "Single batch ID to process. If not provided, will check the 'SLURM_ARRAY_TASK_ID' environment variable."
+  ),
+  make_option(c("--amis_sigma"),
+    type = "double",
+    default = 0.0025,
+    help = "AMIS sigma parameter"
   )
 )
 
@@ -177,7 +182,7 @@ amis_params <- default_amis_params()
 amis_params$max_iters <- 50
 amis_params$n_samples <- 1000
 amis_params$target_ess <- 500
-amis_params$sigma <- 0.0025
+amis_params$sigma <- as.numeric(opts$amis_sigma)
 amis_params$boundaries <- c(-Inf, Inf)
 
 # shell to save trajectories
