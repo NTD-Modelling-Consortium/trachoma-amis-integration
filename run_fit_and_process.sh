@@ -6,10 +6,10 @@ while [ $# -gt 0 ]; do
     --id=*)
         ID="${1#*=}"
         ;;
-    --failed-ids=*)
+    --failed_ids=*)
         FAILED_IDS="${1#*=}"
         ;;
-    --folder-id=*)
+    --folder_id=*)
         FOLDER_ID="${1#*=}"
         ;;
     --help)
@@ -17,10 +17,10 @@ while [ $# -gt 0 ]; do
         echo ""
         echo "Required arguments:"
         echo "  --id=<id>              ID for fitting and processing"
-        echo "  --folder-id=<folder>   Folder ID for realocation (e.g., 'source-data-20250220')"
+        echo "  --folder_id=<folder>   Folder ID for realocation (e.g., 'source-data-20250220')"
         echo ""
         echo "Optional arguments:"
-        echo "  --failed-ids=<ids>     Comma-separated list of failed IDs to skip"
+        echo "  --failed_ids=<ids>     Comma-separated list of failed IDs to skip"
         echo "  --help                 Show this help message"
         exit 0
         ;;
@@ -41,7 +41,7 @@ if [ -z "$ID" ]; then
 fi
 
 if [ -z "$FOLDER_ID" ]; then
-    echo "Error: --folder-id is required"
+    echo "Error: --folder_id is required"
     echo "Run '$0 --help' for usage information"
     exit 1
 fi
@@ -49,7 +49,7 @@ fi
 # Build command arguments for preprocess and realocate scripts
 COMMON_ARGS=""
 if [ ! -z "$FAILED_IDS" ]; then
-    COMMON_ARGS="$COMMON_ARGS --failed-ids=$FAILED_IDS"
+    COMMON_ARGS="$COMMON_ARGS --failed_ids=$FAILED_IDS"
 fi
 
 export SLURM_ARRAY_TASK_ID=$ID
@@ -62,4 +62,4 @@ echo "Running preprocessing for projections..."
 Rscript preprocess_for_projections.R --id=$ID $COMMON_ARGS || exit 1
 
 echo "Running realocation for projections..."
-Rscript realocate_InputPars_MTP.R --id=$ID $COMMON_ARGS --folder-id=$FOLDER_ID || exit 1
+Rscript realocate_InputPars_MTP.R --id=$ID $COMMON_ARGS --folder_id=$FOLDER_ID || exit 1

@@ -89,7 +89,8 @@ process_batch <- function(id, amis_output_data, df_iu_country, folder_id, specie
         dir.create(path_iu, recursive = T)
       }
 
-      file_name_old <- file.path(kPathToPostAmisAnalysis, paste0("InputPars_MTP_", iu, ".csv"))
+      kPathToInputParsMTP <- file.path(kPathToPostAmisAnalysis, paste0("InputPars_MTP_", species))
+      file_name_old <- file.path(kPathToInputParsMTP, paste0("InputPars_MTP_", iu, ".csv"))
       sampled_params <- read.csv(file_name_old)
 
       sampled_params <- sampled_params[, c("seed", "beta_init", paste0("beta", yearschange_index), "eff_cov", "k_parameter")]
@@ -142,7 +143,7 @@ option_list <- list(
     default = "trachoma",
     help = "Species to process [default=%default]"
   ),
-  make_option(c("-f", "--failed-ids"),
+  make_option(c("-f", "--failed_ids"),
     type = "character",
     default = "",
     help = paste(
@@ -151,7 +152,7 @@ option_list <- list(
       "Will be ignored when a single ID is specified."
     )
   ),
-  make_option(c("-d", "--folder-id"),
+  make_option(c("-d", "--folder_id"),
     type = "character",
     help = "Example: 'source-data-20250220'."
   )
@@ -176,7 +177,7 @@ create_directory_structure(countries, opts$folder_id, kSpeciesAll)
 if (!is.null(opts$id)) {
   # Process single ID
   cat(sprintf("Processing single batch ID: %d\n", opts$id))
-  load(file.path(kPathToAmisOutput, paste0("amis_output", id, ".Rdata")))
+  load(file.path(kPathToAmisOutput, paste0("amis_output", opts$id, ".Rdata")))
   process_batch(opts$id, amis_output, df_iu_country, opts$folder_id)
 } else {
   cat("Processing all batch IDs\n")

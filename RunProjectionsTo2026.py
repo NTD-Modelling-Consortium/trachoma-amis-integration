@@ -23,23 +23,28 @@ if not PATH_TO_WORKING_DIR or not PATH_TO_MODEL_DIR:
 PATH_TO_MAPS = PATH_TO_WORKING_DIR / "Maps"
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-d", "--folder-id", required=True, help="Folder ID for outputs")
-parser.add_argument("-i", "--id", required=False, help="SLURM array task ID")
+parser.add_argument("-d", "--folder_id", required=True, help="Folder ID for outputs")
 parser.add_argument(
-    "--num-cores", type=int, default=10, help="Number of CPU cores to use"
+    "-i",
+    "--id",
+    required=False,
+    help="Row index corresponding to the SLURM array task ID",
 )
 parser.add_argument(
-    "--stop-importation",
+    "--num_cores", type=int, default=10, help="Number of CPU cores to use"
+)
+parser.add_argument(
+    "--stop_importation",
     action="store_true",
     help="Stop importation of infections based on IU-specific year",
 )
 args = parser.parse_args()
 
 folder_id = args.folder_id
-IU_SLURM = args.iu_slurm if args.iu_slurm else os.getenv("SLURM_ARRAY_TASK_ID")
-if IU_SLURM is None:
+task_id = args.id if args.id else os.getenv("SLURM_ARRAY_TASK_ID")
+if not task_id:
     raise ValueError(
-        "Must provide --iu-slurm or set SLURM_ARRAY_TASK_ID environment variable"
+        "Must provide --id or set SLURM_ARRAY_TASK_ID environment variable"
     )
 num_cores = args.num_cores
 
@@ -236,186 +241,196 @@ def getResultsNTDMC(results, Start_date, burnin):
 
 pathCountry = PATH_TO_MAPS / "table_iu_idx_trachoma.csv"  # some path here
 df_IU_country = pd.read_csv(pathCountry)
-iu = df_IU_country["IU_ID"].values[int(IU_SLURM)]
-country = df_IU_country["country"].values[int(IU_SLURM)]
 
-Stop_importation_year: Optional[int] = None
-if args.stop_importation:
-    # get the year that the importation should stop from the IU data (assuming the column is called 'stop_importation_year')
-    Stop_importation_year = df_IU_country["stop_importation_year"].values[int(IU_SLURM)]
+# Get all rows matching the task ID
+batch_rows = df_IU_country[df_IU_country["TaskID"] == int(task_id)].index.tolist()
+if not batch_rows:
+    raise ValueError(f"No IUs found for task ID {task_id}")
 
-print(country)
-print(str(iu).zfill(5))
+for row_idx in batch_rows:
+    iu = df_IU_country["IU_ID"].values[row_idx]
+    country = df_IU_country["country"].values[row_idx]
 
+    Stop_importation_year: Optional[int] = None
+    if args.stop_importation:
+        # get the year that the importation should stop from the IU data (assuming the column is called 'stop_importation_year')
+        Stop_importation_year = df_IU_country["stop_importation_year"].values[row_idx]
 
-""" 
-    change to be whatever the scenario we are running is
-"""
+    print(country)
+    print(str(iu).zfill(5))
 
-print("Making projections for trachoma for IU " + str(iu).zfill(5) + "...")
-mda_filepath = PATH_TO_MODEL_DIR / f"endgame_inputs/InputMDA_MTP_projections_{iu}.csv"
+    """ 
+        change to be whatever the scenario we are running is
+    """
 
+    print("Making projections for trachoma for IU " + str(iu).zfill(5) + "...")
+    PATH_TO_ENDGAME_INPUTS = (
+        PATH_TO_MODEL_DIR / "trachoma" / "data" / "coverage" / "endgame_inputs"
+    )
+    mda_filepath = PATH_TO_ENDGAME_INPUTS / f"InputMDA_MTP_projections_{iu}.csv"
 
-"""
-    file name for IU specific parameters
-"""
-# ParamFilePath = '~/Documents/trachoma/post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_' + str(iu) + '.csv'
-ParamFilePath = (
-    PATH_TO_MODEL_DIR
-    / "projections"
-    / SPECIES
-    / str(folder_id)
-    / country
-    / f"{country}{str(iu).zfill(5)}"
-    / f"InputBet_{country}{str(iu).zfill(5)}.csv"
-)
-print(ParamFilePath)
-amisparams = pd.read_csv(ParamFilePath)
-amisparams.columns = [s.replace(" ", "") for s in amisparams.columns]
+    """
+        file name for IU specific parameters
+    """
+    # ParamFilePath = '~/Documents/trachoma/post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_' + str(iu) + '.csv'
+    ParamFilePath = (
+        PATH_TO_MODEL_DIR
+        / "projections"
+        / SPECIES
+        / str(folder_id)
+        / country
+        / f"{country}{str(iu).zfill(5)}"
+        / f"InputBet_{country}{str(iu).zfill(5)}.csv"
+    )
+    print(ParamFilePath)
+    amisparams = pd.read_csv(ParamFilePath)
+    amisparams.columns = [s.replace(" ", "") for s in amisparams.columns]
 
-# define the lists of random seeds, R0 and k
-seeds = amisparams.iloc[:, 0].tolist()
-seeds = list(map(int, seeds))
-betas = amisparams.iloc[:, 1 : (int((sim_params["timesim"]) / 52) + 1)].to_numpy()
-coverages = amisparams.iloc[:, -2].tolist()
-k_parameter = amisparams.iloc[:, -1].tolist()
+    # define the lists of random seeds, R0 and k
+    seeds = amisparams.iloc[:, 0].tolist()
+    seeds = list(map(int, seeds))
+    betas = amisparams.iloc[:, 1 : (int((sim_params["timesim"]) / 52) + 1)].to_numpy()
+    coverages = amisparams.iloc[:, -2].tolist()
+    k_parameter = amisparams.iloc[:, -1].tolist()
 
-"""
-    numSims should be set to 200
-"""
-numSims = 200
+    """
+        numSims should be set to 200
+    """
+    numSims = 200
 
-"""
-    additional functions to run the simulations
-"""
+    """
+        additional functions to run the simulations
+    """
 
-(
-    parameters,
-    sim_params,
-    demog,
-    MDA_times,
-    MDAData,
-    vacc_times,
-    VaccData,
-) = setup()
+    (
+        parameters,
+        sim_params,
+        demog,
+        MDA_times,
+        MDAData,
+        vacc_times,
+        VaccData,
+    ) = setup()
 
+    paramsToAlter = copy.deepcopy(parameters)
 
-paramsToAlter = copy.deepcopy(parameters)
-
-
-outputTimes = get_Intervention_times(
-    getOutputTimes(range(1996, 2022)),
-    START_DATE,
-    sim_params["burnin"],
-)
-
-timeToStopImportation = -1  # Disable stop-importation feature
-if args.stop_importation:
-    # convert the calendar year that the importation should stop to a simulation time
-    Stop_importation_date = getOutputTimes([Stop_importation_year])
-    timeToStopImportation = get_Intervention_times(
-        Stop_importation_date, START_DATE, sim_params["burnin"]
-    )[0]
-
-
-def do_single_run(seed, beta, coverage, k_parameter, i, timeToStopImportation):
-    np.random.seed(seed)
-    altered_mda_coverage = alterMDACoverage(MDAData, coverage)
-    init_vals = create_initial_population(initial_infect_frac, altered_mda_coverage)
-    random_state = np.random.get_state()
-    parameters["infection_risk_shape"] = k_parameter
-    return run_single_simulation(
-        pickleData=copy.deepcopy(init_vals),
-        params=parameters,
-        timesim=sim_params["timesim"],
-        burnin=sim_params["burnin"],
-        demog=demog,
-        beta=beta,
-        MDA_times=MDA_times,
-        MDAData=altered_mda_coverage,
-        vacc_times=vacc_times,
-        VaccData=VaccData,
-        outputTimes=outputTimes,
-        index=i,
-        numpy_state=random_state,
-        doIHMEOutput=False,
-        doSurvey=False,
-        distToUse=DIST_TO_USE,
-        postMDAImportationReduction=True,
-        timeToStopImportation=timeToStopImportation,
+    outputTimes = get_Intervention_times(
+        getOutputTimes(range(1996, 2022)),
+        START_DATE,
+        sim_params["burnin"],
     )
 
+    timeToStopImportation = -1  # Disable stop-importation feature
+    if args.stop_importation:
+        # convert the calendar year that the importation should stop to a simulation time
+        Stop_importation_date = getOutputTimes([Stop_importation_year])
+        timeToStopImportation = get_Intervention_times(
+            Stop_importation_date, START_DATE, sim_params["burnin"]
+        )[0]
 
-results = Parallel(n_jobs=num_cores)(
-    delayed(do_single_run)(
-        seeds[i], betas[i, :], coverages[i], k_parameter[i], i, timeToStopImportation
+    def do_single_run(seed, beta, coverage, k_parameter, i, timeToStopImportation):
+        np.random.seed(seed)
+        altered_mda_coverage = alterMDACoverage(MDAData, coverage)
+        init_vals = create_initial_population(initial_infect_frac, altered_mda_coverage)
+        random_state = np.random.get_state()
+        parameters["infection_risk_shape"] = k_parameter
+        return run_single_simulation(
+            pickleData=copy.deepcopy(init_vals),
+            params=parameters,
+            timesim=sim_params["timesim"],
+            burnin=sim_params["burnin"],
+            demog=demog,
+            beta=beta,
+            MDA_times=MDA_times,
+            MDAData=altered_mda_coverage,
+            vacc_times=vacc_times,
+            VaccData=VaccData,
+            outputTimes=outputTimes,
+            index=i,
+            numpy_state=random_state,
+            doIHMEOutput=False,
+            doSurvey=False,
+            distToUse=DIST_TO_USE,
+            postMDAImportationReduction=True,
+            timeToStopImportation=timeToStopImportation,
+        )
+
+    results = Parallel(n_jobs=num_cores)(
+        delayed(do_single_run)(
+            seeds[i],
+            betas[i, :],
+            coverages[i],
+            k_parameter[i],
+            i,
+            timeToStopImportation,
+        )
+        for i in range(numSims)
     )
-    for i in range(numSims)
-)
 
-simData = [item[0] for item in results]
+    simData = [item[0] for item in results]
 
-"""
-    Make pickle files and NTDMC data outputs
-"""
+    """
+        Make pickle files and NTDMC data outputs
+    """
 
-# want outputs like <ascaris-folder>/AGO/AGO02049/Asc_AGO02049.p
-newOutputSimDataFilePath = (
-    PATH_TO_MODEL_DIR
-    / "projections"
-    / SPECIES
-    / str(folder_id)
-    / country
-    / f"{country}{str(iu).zfill(5)}"
-    / f"{SPECIES_PREFIX}{country}{str(iu).zfill(5)}.p"
-)
-# newOutputSimDataFilePath = "pickleETC.p"
+    # want outputs like <ascaris-folder>/AGO/AGO02049/Asc_AGO02049.p
+    newOutputSimDataFilePath = (
+        PATH_TO_MODEL_DIR
+        / "projections"
+        / SPECIES
+        / str(folder_id)
+        / country
+        / f"{country}{str(iu).zfill(5)}"
+        / f"{SPECIES_PREFIX}{country}{str(iu).zfill(5)}.p"
+    )
+    # newOutputSimDataFilePath = "pickleETC.p"
 
-# only save subset of data
-subset_keys = [
-    "IndI",
-    "IndD",
-    "No_Inf",
-    "T_latent",
-    "T_ID",
-    "T_D",
-    "Ind_latent",
-    "Ind_ID_period_base",
-    "Ind_D_period_base",
-    "bact_load",
-    "Age",
-    "vaccinated",
-    "time_since_vaccinated",
-    "treatProbability",
-    "MDA_coverage",
-    "systematic_non_compliance",
-    "ids",
-]
+    # only save subset of data
+    subset_keys = [
+        "IndI",
+        "IndD",
+        "No_Inf",
+        "T_latent",
+        "T_ID",
+        "T_D",
+        "Ind_latent",
+        "Ind_ID_period_base",
+        "Ind_D_period_base",
+        "bact_load",
+        "Age",
+        "vaccinated",
+        "time_since_vaccinated",
+        "treatProbability",
+        "MDA_coverage",
+        "systematic_non_compliance",
+        "ids",
+    ]
 
-subset_sim_data = [{key: d[key] for key in subset_keys if key in d} for d in simData]
+    subset_sim_data = [
+        {key: d[key] for key in subset_keys if key in d} for d in simData
+    ]
 
-print("Pickle file name:")
-print(newOutputSimDataFilePath)
-pickle.dump(subset_sim_data, open(newOutputSimDataFilePath, "wb"))
+    print("Pickle file name:")
+    print(newOutputSimDataFilePath)
+    pickle.dump(subset_sim_data, open(newOutputSimDataFilePath, "wb"))
 
+    NTDMC = getResultsNTDMC(results, START_DATE, sim_params["burnin"])
 
-NTDMC = getResultsNTDMC(results, START_DATE, sim_params["burnin"])
+    PrevDatasetFilePath = (
+        PATH_TO_MODEL_DIR
+        / "projections"
+        / SPECIES
+        / str(folder_id)
+        / country
+        / f"{country}{str(iu).zfill(5)}"
+        / f"PrevDataset_{SPECIES_PREFIX}{country}{str(iu).zfill(5)}.csv"
+    )
+    # PrevDatasetFilePath = "NTDMCETC.csv"
+    print("PrevDataset_species_iu.csv file name:")
+    print(PrevDatasetFilePath)
+    NTDMC.to_csv(PrevDatasetFilePath, index=False)
 
-PrevDatasetFilePath = (
-    PATH_TO_MODEL_DIR
-    / "projections"
-    / SPECIES
-    / str(folder_id)
-    / country
-    / f"{country}{str(iu).zfill(5)}"
-    / f"PrevDataset_{SPECIES_PREFIX}{country}{str(iu).zfill(5)}.csv"
-)
-# PrevDatasetFilePath = "NTDMCETC.csv"
-print("PrevDataset_species_iu.csv file name:")
-print(PrevDatasetFilePath)
-NTDMC.to_csv(PrevDatasetFilePath, index=False)
-
-print("Finished projections for " + str(SPECIES) + " in IU " + str(iu) + ".")
+    print("Finished projections for " + str(SPECIES) + " in IU " + str(iu) + ".")
 
 #################################################################################################################
 

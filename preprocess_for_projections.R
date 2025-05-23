@@ -41,7 +41,7 @@ process_all_batches <- function(id_vec) {
   sampled_params_all
 }
 
-process_batch <- function(id, amis_output_data) {
+process_batch <- function(id, amis_output_data, species = "trachoma") {
   cat(sprintf("Processing batch ID: %d\n", id))
 
   iu_names <- rownames(amis_output_data$prevalence_map[[1]]$data)
@@ -60,6 +60,7 @@ process_batch <- function(id, amis_output_data) {
       )
 
       # this puts all ius in the same folder
+      kPathToInputParsMTP <- file.path(kPathToPostAmisAnalysis, paste0("InputPars_MTP_", species))
       file_name <- file.path(kPathToInputParsMTP, paste0("InputPars_MTP_", iu, ".csv"))
       write.csv(sampled_params, file = file_name, row.names = F)
 
@@ -82,7 +83,7 @@ option_list <- list(
     default = "trachoma",
     help = "Species to process [default=%default]"
   ),
-  make_option(c("-f", "--failed-ids"),
+  make_option(c("-f", "--failed_ids"),
     type = "character",
     default = "",
     help = paste(
