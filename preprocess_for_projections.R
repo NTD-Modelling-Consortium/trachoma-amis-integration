@@ -125,6 +125,7 @@ load(file.path(kPathToMaps, "trachoma_map_years.rds"))
 # loading 'iu_task_lookup' (batches-IUs look up table for the fitting)
 load(file.path(kPathToMaps, "iu_task_lookup.Rdata"))
 
+kPathToInputParsMTP <- file.path(kPathToPostAmisAnalysis, paste0("InputPars_MTP_", opts$species))
 create_directory_structure(species = opts$species)
 if (!is.null(opts$id)) {
   # Process single ID
@@ -132,7 +133,7 @@ if (!is.null(opts$id)) {
   sampled_params_all <- process_batch(opts$id, amis_output)
   if (!is.null(sampled_params_all)) {
     output_file <- paste0("InputPars_MTP_", opts$id, ".rds")
-    save(sampled_params_all, file.path(kPathToInputParsMTP, output_file))
+    save(sampled_params_all, file = file.path(kPathToInputParsMTP, output_file))
     cat(sprintf("Saved posterior parameter samples for single batch [%d] to: %s\n", opts$id, output_file))
   }
 } else {
