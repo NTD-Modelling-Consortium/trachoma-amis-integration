@@ -77,8 +77,8 @@ fi
 export SLURM_ARRAY_TASK_ID=$ID
 
 echo "Preparing histories and maps..."
-Rscript prepare_histories_and_maps.R --id="$ID" || exit 1
-Rscript prepare_histories_projections.R --id="$ID" || exit 1
+Rscript Maps/prepare_histories_and_maps.R --id="$ID" || exit 1
+Rscript Maps/prepare_histories_projections.R --id="$ID" || exit 1
 
 # Run the fitting process
 echo "Running trachoma fitting and preprocessing projections..."

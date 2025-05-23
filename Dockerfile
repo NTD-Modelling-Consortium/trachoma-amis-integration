@@ -77,4 +77,4 @@ ENV RETICULATE_PYTHON=/opt/conda/bin/python
 ENV RETICULATE_PYTHON_FALLBACK=FALSE
 
 VOLUME [${TRACHOMA_MODEL_DIR}/projections/trachoma]
-ENTRYPOINT [ "run_historic_simulations.sh" ]
+ENTRYPOINT [ "bash", "run_historic_simulations.sh" ]
