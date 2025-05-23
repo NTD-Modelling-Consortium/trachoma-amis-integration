@@ -49,7 +49,7 @@ amis_int_mod <- import("trachoma_amis")
 
 # Load prevalence map and filter rows for TaskID == id
 load(file.path(kPathToMaps, "trachoma_maps.rds"))
-load(file.path("trachoma_map_years.rds"))
+load(file.path(kPathToMaps, "trachoma_map_years.rds"))
 prevalence_map <- trachoma_maps
 prevalence_map <- lapply(1:length(prevalence_map), function(t) {
   output <- list(

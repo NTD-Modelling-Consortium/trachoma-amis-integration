@@ -73,4 +73,8 @@ WORKDIR ${TRACHOMA_AMIS_DIR}
 RUN --mount=type=cache,target=/root/.cache/pip cd ${TRACHOMA_MODEL_DIR} && pip install .
 RUN --mount=type=cache,target=/root/.cache/pip pip install .
 
-ENTRYPOINT [ "conda", "run", "--no-capture-output", "/bin/bash" ]
+ENV RETICULATE_PYTHON=/opt/conda/bin/python
+ENV RETICULATE_PYTHON_FALLBACK=FALSE
+
+# ENTRYPOINT [ "conda", "run", "--no-capture-output", "/bin/bash" ]
+ENTRYPOINT [ "bash" ]

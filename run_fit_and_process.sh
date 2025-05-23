@@ -52,6 +52,8 @@ if [ ! -z "$FAILED_IDS" ]; then
     COMMON_ARGS="$COMMON_ARGS --failed-ids=$FAILED_IDS"
 fi
 
+export SLURM_ARRAY_TASK_ID=$ID
+
 # Run the R scripts in sequence
 echo "Running trachoma fitting..."
 Rscript trachoma_fitting.R --id=$ID

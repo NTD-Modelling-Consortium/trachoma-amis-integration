@@ -1,9 +1,10 @@
 from datetime import date
 import copy
 import random
-import os 
+import os
 from joblib import Parallel, delayed
 import numpy as np
+from pathlib import Path
 
 from ntdmc_trachoma.trachoma_functions import (
     run_single_simulation,
@@ -21,17 +22,18 @@ __all__ = ["build_transmission_model"]
 START_DATE = date(1996, 1, 1)
 
 id = os.getenv("SLURM_ARRAY_TASK_ID")
-mda_filepath = 'endgame_inputs/InputMDA_MTP_' + str(id) + '.csv'
-distToUse="Expo"
+mda_filepath = (
+    Path(os.getenv("TRACHOMA_MODEL_DIR", ".")) / f"endgame_inputs/InputMDA_MTP_{id}.csv"
+)
+distToUse = "Expo"
+
+
 def set_start_date(datestr: str):
     global START_DATE
     try:
         START_DATE = date.fromisoformat(datestr)
     except ValueError as e:
-        msg = (
-            f"{e}.\n"
-            "Valid dates formats are YYYY-MM-DD, YYYYMMDD or YYYY-WXX-D."
-        )
+        msg = f"{e}.\n" "Valid dates formats are YYYY-MM-DD, YYYYMMDD or YYYY-WXX-D."
         raise ValueError(msg)
 
 
@@ -67,7 +69,14 @@ def setup():
 
 
 def create_initial_population(initial_prevalence: float, MDAData, distToUse="Expo"):
-    vals = Set_inits(parameters, demog, sim_params, MDAData, np.random.get_state(), distToUse=distToUse)
+    vals = Set_inits(
+        parameters,
+        demog,
+        sim_params,
+        MDAData,
+        np.random.get_state(),
+        distToUse=distToUse,
+    )
     ids = np.random.choice(
         range(parameters["N"]), int(initial_prevalence * parameters["N"]), replace=False
     )
@@ -78,13 +87,13 @@ def create_initial_population(initial_prevalence: float, MDAData, distToUse="Exp
 
 
 def alterMDACoverage(MDAData, coverage):
-    """ update the coverage of each MDA for a run to be a given value.
+    """update the coverage of each MDA for a run to be a given value.
     Parameters
     ----------
     MDAData
-        A list of MDA's to be done with date and coverage of the MDA included. 
+        A list of MDA's to be done with date and coverage of the MDA included.
         The coverage is given by the 4th value within each MDA of MDAData so we update the [3] position.
-    coverage    
+    coverage
         The new coverage level for each MDA
     Returns
     -------
@@ -95,10 +104,9 @@ def alterMDACoverage(MDAData, coverage):
         MDA[3] = coverage
     return MDAData
 
+
 def build_transmission_model(
-        fitting_points: list[int],
-        initial_infect_frac=0.1,
-        num_cores=-2
+    fitting_points: list[int], initial_infect_frac=0.1, num_cores=-2
 ):
     """Create a closure for the AMIS to run the trachoma model.
 
@@ -127,17 +135,19 @@ def build_transmission_model(
     ) = setup()
 
     outputTimes = get_Intervention_times(
-        getOutputTimes(range(1996,2022)),
+        getOutputTimes(range(1996, 2022)),
         START_DATE,
-        sim_params['burnin'],
+        sim_params["burnin"],
     )
 
     def do_single_run(seed, beta, coverage, k_parameter, i):
         np.random.seed(seed)
         altered_mda_coverage = alterMDACoverage(MDAData, coverage)
-        init_vals = create_initial_population(initial_infect_frac, altered_mda_coverage,distToUse)
+        init_vals = create_initial_population(
+            initial_infect_frac, altered_mda_coverage, distToUse
+        )
         random_state = np.random.get_state()
-        parameters['infection_risk_shape'] = k_parameter
+        parameters["infection_risk_shape"] = k_parameter
         return run_single_simulation(
             pickleData=copy.deepcopy(init_vals),
             params=parameters,
@@ -154,16 +164,21 @@ def build_transmission_model(
             numpy_state=random_state,
             doIHMEOutput=False,
             doSurvey=False,
-            distToUse = distToUse,
-            postMDAImportationReduction = True
+            distToUse=distToUse,
+            postMDAImportationReduction=True,
         )
 
     def run_trachoma(seeds, params, n_tims):
 
         results: list[tuple[dict, list]]
         results = Parallel(n_jobs=num_cores)(
-            delayed(do_single_run)(seed, beta=amisPars[0:(int(sim_params['timesim']/52))], 
-                                   coverage=amisPars[-2], k_parameter = amisPars[-1], i=i)
+            delayed(do_single_run)(
+                seed,
+                beta=amisPars[0 : (int(sim_params["timesim"] / 52))],
+                coverage=amisPars[-2],
+                k_parameter=amisPars[-1],
+                i=i,
+            )
             # params now will have 2 columns, one for beta and one for coverage
             # iterate over these, naming them amisPars, and amisPars[0] being beta
             # amisPars[1] being the coverage value
@@ -179,25 +194,29 @@ def build_transmission_model(
         # Must return 2d numpy array with:
         # rows = simulations
         # columns = data points
-        return [np.transpose(
+        return [
             np.transpose(
-                [
-                    # 'v' is a list, so convert it to NumPy array to index it from
-                    # a list 'fitting_points'
-                    np.asarray(v["True_Prev_Disease_children_1_9"])[fitting_points]
-                    for (v, r) in results
-                ]
-            )
-        ),
-        np.transpose(
+                np.transpose(
+                    [
+                        # 'v' is a list, so convert it to NumPy array to index it from
+                        # a list 'fitting_points'
+                        np.asarray(v["True_Prev_Disease_children_1_9"])[fitting_points]
+                        for (v, r) in results
+                    ]
+                )
+            ),
             np.transpose(
-                [
-                    # 'v' is a list, so convert it to NumPy array to index it from
-                    # a list 'fitting_points'
-                    np.asarray(v["True_Infections_Disease_children_1_9"])[fitting_points]
-                    for (v, r) in results
-                ]
-            )
-        )]
+                np.transpose(
+                    [
+                        # 'v' is a list, so convert it to NumPy array to index it from
+                        # a list 'fitting_points'
+                        np.asarray(v["True_Infections_Disease_children_1_9"])[
+                            fitting_points
+                        ]
+                        for (v, r) in results
+                    ]
+                )
+            ),
+        ]
 
     return run_trachoma
