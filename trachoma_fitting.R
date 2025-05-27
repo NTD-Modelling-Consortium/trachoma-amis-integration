@@ -18,11 +18,6 @@ option_list <- list(
     default = 0.0025,
     help = "AMIS sigma parameter"
   )
-  make_option(c("--samples"),
-    type = "integer",
-    default = 1000,
-    help = "Number of simulations to run at each iteration"
-  )
 )
 
 opt_parser <- OptionParser(option_list = option_list)
@@ -40,16 +35,10 @@ id <- if (!is.null(opts$id)) {
   }
 }
 
-n_samples <- if (!is.null(opts$samples)) {
-  opts$samples
-} else {
-  n_samples_env <- as.numeric(Sys.getenv("AMIS_N_SAMPLES"))
-  if (!is.na(n_samples_env)) {
-    n_samples_env
-  } else {
+n_samples <- as.numeric(Sys.getenv("AMIS_N_SAMPLES"))
+if(is.na(n_samples)) {
     print("Using default (1000) number of samples")
-    1000
-  }
+    n_samples <- 1000
 }
 
 target_ess <- as.numeric(Sys.getenv("TARGET_ESS"))
