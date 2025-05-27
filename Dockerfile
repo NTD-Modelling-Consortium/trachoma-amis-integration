@@ -12,7 +12,9 @@ ARG TRACHOMA_MODEL_DIR=${TRACHOMA_AMIS_DIR}/model/ntd-model-trachoma
 ENV TRACHOMA_AMIS_DIR=${TRACHOMA_AMIS_DIR}
 ENV TRACHOMA_MODEL_DIR=${TRACHOMA_MODEL_DIR}
 
-RUN apt update && apt install -y \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,target=/var/lib/apt,sharing=locked \
+        apt update && apt install -y \
         build-essential \
         cmake \
         vim \
