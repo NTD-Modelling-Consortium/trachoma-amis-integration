@@ -75,8 +75,14 @@ process_batch <- function(id, amis_output_data, df_iu_country, folder_id, specie
   ess <- amis_output$ess
   num_samples <- 200
 
+  ess_threshold <- as.numeric(Sys.getenv("ESS_THRESHOLD"))
+  if (is.na(ess_threshold)) {
+    print("Using default (200) SS threshold for preprocess_for_projecctions")
+    ess_threshold <- 200
+  }
+
   for (iu in iu_names) {
-    if (ess[which(iu_names == iu)] >= 200) {
+    if (ess[which(iu_names == iu)] >= ess_threshold) {
       wh <- which(df_iu_country$IU_ID == iu)
       if (length(wh) != 1) {
         stop("iu must be found exactly once in df_iu_country")

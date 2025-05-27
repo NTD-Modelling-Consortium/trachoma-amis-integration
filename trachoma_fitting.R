@@ -35,6 +35,12 @@ id <- if (!is.null(opts$id)) {
   }
 }
 
+target_ess <- as.numeric(Sys.getenv("TARGET_ESS"))
+if (is.na(target_ess)) {
+  print("Using default (500) for target_ess")
+  target_ess <- 500
+}
+
 # setup code to vary beta throughout simulation
 randomWalk <- TRUE
 # parameters of beta distribution
@@ -181,7 +187,7 @@ prior <- list(rprior = rprior, dprior = dprior)
 amis_params <- default_amis_params()
 amis_params$max_iters <- 50
 amis_params$n_samples <- 1000
-amis_params$target_ess <- 500
+amis_params$target_ess <- target_ess
 amis_params$sigma <- as.numeric(opts$amis_sigma)
 amis_params$boundaries <- c(-Inf, Inf)
 

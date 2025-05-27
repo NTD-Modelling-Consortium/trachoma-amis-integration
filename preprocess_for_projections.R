@@ -50,9 +50,15 @@ process_batch <- function(id, amis_output_data, species = "trachoma") {
   #### Sample draws from the posterior
   num_sub_samples_posterior <- 200
 
+  ess_threshold <- as.numeric(Sys.getenv("ESS_THRESHOLD"))
+  if (is.na(ess_threshold)) {
+    print("Using default (200) SS threshold for preprocess_for_projecctions")
+    ess_threshold <- 200
+  }
+
   sampled_params_all <- c()
   for (iu in iu_names) {
-    if (ess[which(iu_names == iu)] >= 200) {
+    if (ess[which(iu_names == iu)] >= ess_threshold) {
       sampled_params <- sample_parameters(
         x = amis_output,
         n_samples = num_sub_samples_posterior,
