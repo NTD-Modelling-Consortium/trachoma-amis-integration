@@ -18,6 +18,11 @@ option_list <- list(
     default = 0.0025,
     help = "AMIS sigma parameter"
   )
+  make_option(c("--samples"),
+    type = "integer",
+    default = 1000,
+    help = "Number of simulations to run at each iteration"
+  )
 )
 
 opt_parser <- OptionParser(option_list = option_list)
@@ -186,7 +191,7 @@ prior <- list(rprior = rprior, dprior = dprior)
 # Algorithm parameters
 amis_params <- default_amis_params()
 amis_params$max_iters <- 50
-amis_params$n_samples <- 1000
+amis_params$n_samples <- as.numeric(opts$samples)
 amis_params$target_ess <- target_ess
 amis_params$sigma <- as.numeric(opts$amis_sigma)
 amis_params$boundaries <- c(-Inf, Inf)
