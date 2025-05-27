@@ -40,6 +40,18 @@ id <- if (!is.null(opts$id)) {
   }
 }
 
+n_samples <- if (!is.null(opts$samples)) {
+  opts$samples
+} else {
+  n_samples_env <- as.numeric(Sys.getenv("AMIS_N_SAMPLES"))
+  if (!is.na(n_samples_env)) {
+    n_samples_env
+  } else {
+    print("Using default (1000) number of samples")
+    1000
+  }
+}
+
 target_ess <- as.numeric(Sys.getenv("TARGET_ESS"))
 if (is.na(target_ess)) {
   print("Using default (500) for target_ess")
@@ -191,7 +203,7 @@ prior <- list(rprior = rprior, dprior = dprior)
 # Algorithm parameters
 amis_params <- default_amis_params()
 amis_params$max_iters <- 50
-amis_params$n_samples <- as.numeric(opts$samples)
+amis_params$n_samples <- n_samples
 amis_params$target_ess <- target_ess
 amis_params$sigma <- as.numeric(opts$amis_sigma)
 amis_params$boundaries <- c(-Inf, Inf)
