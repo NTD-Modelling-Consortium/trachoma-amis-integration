@@ -56,9 +56,9 @@ For example,
 
 This will produce the projections and place them inside the `model/ntd-model-trachoma/trachoma/projections`.
 
-For more fine-grained usage where individual stages are invoked separately, pass the `--help` argument to the scripts to find out what arguments are expected. This may be, particularly, useful when one or a subset of the stages is to be run. For example, refits might only need the *Preparation* and *Fitting* stages.
-
 **NOTE**: `folder_id` is a bit of a misnomer because of the naming convention used for the directory `source-data-<yyyymmdd>`. The contents of this folder are outputs from the `Fitting & Preprocessing Projections` stage but inputs to the subsequent `Near-term Projections` stage.
+
+For more fine-grained usage where individual stages are invoked separately, pass the `--help` argument to the scripts to find out what arguments are expected. This may be, particularly, useful when one or a subset of the stages is to be run. For example, refits might only need the *Preparation* and *Fitting* stages.
 
 #### Docker
 The pipeline can also be invoked using built container -
@@ -66,3 +66,19 @@ The pipeline can also be invoked using built container -
 docker run -v ./trachoma:/ntdmc/trachoma-amis-integration/model/ntd-model-trachoma/projections/trachoma trachoma-amis-pipeline:latest --id=<id> --folder_id="source-data-<yyyymmdd>" [--stop_importation] [--amis_sigma=<0.025>]
 ```
 This will produce the projections and place them inside the `trachoma` directory at the root of the repo on the host, allowing for easy access.
+
+#### Environment Variables
+
+The following environment variables can be defined to influence the speed of the fitting stage, for testing - 
+
+```shell
+TARGET_ESS=500
+ESS_THRESHOLD=200
+AMIS_N_SAMPLES=1000
+```
+
+and specified with the `docker run` command as follows, for example - 
+```shell
+docker run -e TARGET_ESS=1 -e ESS_THRESHOLD=1 -e AMIS_N_SAMPLES=10 -v ./trachoma:/ntdmc/trachoma-amis-integration/model/ntd-model-trachoma/projections/trachoma trachoma-amis-pipeline:latest --id=<id> --folder_id="source-data-<yyyymmdd>" [--stop_importation] [--amis_sigma=<0.025>]
+```
+
