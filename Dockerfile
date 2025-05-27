@@ -75,6 +75,8 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install .
 
 ENV RETICULATE_PYTHON=/opt/conda/bin/python
 ENV RETICULATE_PYTHON_FALLBACK=FALSE
+ENV TARGET_ESS=500
+ENV ESS_THRESHOLD=200
 
 VOLUME [${TRACHOMA_MODEL_DIR}/projections/trachoma]
 ENTRYPOINT [ "bash", "run_historic_simulations.sh" ]
