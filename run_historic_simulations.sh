@@ -15,6 +15,9 @@ while [ $# -gt 0 ]; do
     --num_cores=*)
         NUM_CORES="${1#*=}"
         ;;
+    --amis_sigma=*)
+        AMIS_SIGMA="${1#*=}"
+        ;;
     --stop_importation)
         STOP_IMPORTATION=true
         ;;
@@ -28,6 +31,7 @@ while [ $# -gt 0 ]; do
         echo "Optional arguments:"
         echo "  --failed_ids=<ids>     Comma-separated list of failed batch/task IDs to skip"
         echo "  --num_cores=<n>        Number of CPU cores to use for projections (default: 10)"
+        echo "  --amis_sigma=<number>  AMIS 'sigma' parameter, expects a floating point number (default: 0.0025)"
         echo "  --stop_importation     Stop importation of infections based on IU-specific year"
         echo "  --help                 Show this help message"
         exit 0
@@ -71,6 +75,10 @@ fi
 COMMON_ARGS=""
 if [ ! -z "$FAILED_IDS" ]; then
     COMMON_ARGS="$COMMON_ARGS --failed_ids=$FAILED_IDS"
+fi
+
+if [ ! -z "$AMIS_SIGMA" ]; then
+    COMMON_ARGS="$COMMON_ARGS --amis_sigma=$AMIS_SIGMA"
 fi
 
 # Export task ID for sub-processes

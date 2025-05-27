@@ -35,11 +35,27 @@ The scripts in every stage can work with a single task/batch ID using the `--id`
 
 Assuming invoking the script from inside the Docker container's shell, it's usage is as follows - 
 ```shell
-./run_historic_simulations.sh --id=<id> --folder_id="source-data-<yyyymmdd>" [--stop_importation] [--amis_sigma=0.025]
+Usage: ./run_historic_simulations.sh [options]
+
+Required arguments:
+  --id=<id>              SLURM batch/task ID for fitting and historic simulations
+  --folder_id=<folder>   Folder for realocation (e.g., 'source-data-20250220')
+
+Optional arguments:
+  --failed_ids=<ids>     Comma-separated list of failed batch/task IDs to skip
+  --num_cores=<n>        Number of CPU cores to use for projections (default: 10)
+  --stop_importation     Stop importation of infections based on IU-specific year
+  --help                 Show this help message
 ```
+For example,
+
+```shell
+./run_historic_simulations.sh --id=11 --folder_id="source-data-20250525" --num_cores=1 --stop_importation
+```
+
 This will produce the projections and place them inside the `model/ntd-model-trachoma/trachoma/projections`.
 
-For more fine-grained usage where individual stages are invoked separately, pass the `--help` argument to the scripts to find out what arguments the script expects. This may be, particularly, useful when one or a subset of the stages is to be run. For example, refits might only need the *Preparation* and *Fitting* stages.
+For more fine-grained usage where individual stages are invoked separately, pass the `--help` argument to the scripts to find out what arguments are expected. This may be, particularly, useful when one or a subset of the stages is to be run. For example, refits might only need the *Preparation* and *Fitting* stages.
 
 #### Docker
 The pipeline can also be invoked using built container -
