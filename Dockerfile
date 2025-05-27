@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # https://biohpc.cornell.edu/doc/CondaInContainer.html
-FROM continuumio/miniconda3:latest
+FROM condaforge/miniforge3:latest
 
 SHELL [ "/bin/bash", "-c" ]
 ARG DEBIAN_FRONTEND=noninteractive
@@ -27,7 +27,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libudunits2-dev
 
 RUN conda config --add channels conda-forge --add channels defaults --add channels r
-RUN conda install --yes --name base \
+RUN --mount=type=cache,target=/opt/conda/pkgs \
+        conda install --yes --name base \
         python=3.10 \
         pandas \
         joblib \
@@ -45,8 +46,7 @@ RUN conda install --yes --name base \
         r-mnormt \
         r-optparse \
         r-sf \
-        r-renv && \
-        conda clean -a -y
+        r-renv
 
 # Cannot activate the conda environment easily
 # So instead adjust shell to run everything inside Conda
@@ -63,7 +63,7 @@ RUN R --version && python --version
 RUN mkdir -p -m 0600 ~/.ssh && \
         ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/trachoma-amis-integration.git#256-trachoma-fit-docker-container ${TRACHOMA_AMIS_DIR}
+ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/trachoma-amis-integration.git#implement-overriding-ess ${TRACHOMA_AMIS_DIR}
 
 # Get trachoma model
 ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git ${TRACHOMA_MODEL_DIR}
