@@ -26,7 +26,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libgdal-dev \
         libudunits2-dev
 
-RUN conda config --add channels conda-forge --add channels defaults --add channels r
 RUN --mount=type=cache,target=/opt/conda/pkgs \
         conda install --yes --name base \
         python=3.10 \
