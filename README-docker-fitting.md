@@ -44,6 +44,7 @@ Required arguments:
 Optional arguments:
   --failed_ids=<ids>     Comma-separated list of failed batch/task IDs to skip
   --num_cores=<n>        Number of CPU cores to use for projections (default: 10)
+  --amis_sigma=<number>  AMIS 'sigma' parameter, expects a floating point number (default: 0.0025)
   --stop_importation     Stop importation of infections based on IU-specific year
   --help                 Show this help message
 ```
@@ -56,6 +57,8 @@ For example,
 This will produce the projections and place them inside the `model/ntd-model-trachoma/trachoma/projections`.
 
 For more fine-grained usage where individual stages are invoked separately, pass the `--help` argument to the scripts to find out what arguments are expected. This may be, particularly, useful when one or a subset of the stages is to be run. For example, refits might only need the *Preparation* and *Fitting* stages.
+
+**NOTE**: `folder_id` is a bit of a misnomer because of the naming convention used for the directory `source-data-<yyyymmdd>`. The contents of this folder are outputs from the `Fitting & Preprocessing Projections` stage but inputs to the subsequent `Near-term Projections` stage.
 
 #### Docker
 The pipeline can also be invoked using built container -

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-# https://biohpc.cornell.edu/doc/CondaInContainer.html
-FROM continuumio/miniconda3:latest
+# https://hub.docker.com/r/condaforge/miniforge3
+FROM condaforge/miniforge3
 
 SHELL [ "/bin/bash", "-c" ]
 ARG DEBIAN_FRONTEND=noninteractive
@@ -24,7 +24,6 @@ RUN apt update && apt install -y \
         libgdal-dev \
         libudunits2-dev
 
-RUN conda config --add channels conda-forge --add channels defaults --add channels r
 RUN conda install --yes --name base \
         python=3.10 \
         pandas \
