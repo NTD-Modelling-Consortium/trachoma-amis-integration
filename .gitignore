@@ -206,3 +206,6 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 .Rprofile
+
+# macOS specific files
+.DS_Store
