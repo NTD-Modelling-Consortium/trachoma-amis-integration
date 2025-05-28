@@ -13,16 +13,30 @@ option_list <- list(
     type = "integer",
     help = "Single batch ID to process. If not provided, will check the 'SLURM_ARRAY_TASK_ID' environment variable."
   ),
-  make_option(c("--amis_sigma"),
+  make_option(c("--amis-sigma"),
     type = "double",
     default = 0.0025,
     help = "AMIS sigma parameter"
+  ),
+  make_option(c("--amis-n-samples"),
+    type = "integer",
+    default = 1000,
+    help = "Number of AMIS samples (default: 1000)"
+  ),
+  make_option(c("--num-cores"),
+    type = "integer",
+    default = 8L,
+    help = "Number of cores to use for parallel processing (default: 8)"
+  ),
+  make_option(c("--amis-target-ess"),
+    type = "integer",
+    default = 500,
+    help = "Target ESS parameter for AMIS (default: 500)"
   )
 )
 
 opt_parser <- OptionParser(option_list = option_list)
 opts <- parse_args(opt_parser)
-
 
 id <- if (!is.null(opts$id)) {
   opts$id
@@ -35,17 +49,8 @@ id <- if (!is.null(opts$id)) {
   }
 }
 
-n_samples <- as.numeric(Sys.getenv("AMIS_N_SAMPLES"))
-if(is.na(n_samples)) {
-    print("Using default (1000) number of samples")
-    n_samples <- 1000
-}
-
-target_ess <- as.numeric(Sys.getenv("TARGET_ESS"))
-if (is.na(target_ess)) {
-  print("Using default (500) for target_ess")
-  target_ess <- 500
-}
+n_samples <- opts$"amis-n-samples"
+target_ess <- opts$"amis-target-ess"
 
 # setup code to vary beta throughout simulation
 randomWalk <- TRUE
@@ -57,10 +62,6 @@ yearschange_index <- c(2000, 2010, 2020) - 1926 + 1 # 1926 is data start date (1
 n_timschange <- length(yearschange_index)
 
 # load trachoma model
-# for testing
-# setwd("~/Documents/trachoma-endgame/trachoma-amis-integration/")
-# reticulate::use_virtualenv("~/Documents/trachoma-endgame/trachoma-venv", required=TRUE)
-# reticulate::use_virtualenv("../trachoma-venv", required = TRUE)
 reticulate::py_config()
 amis_int_mod <- import("trachoma_amis")
 
@@ -194,7 +195,7 @@ amis_params <- default_amis_params()
 amis_params$max_iters <- 50
 amis_params$n_samples <- n_samples
 amis_params$target_ess <- target_ess
-amis_params$sigma <- as.numeric(opts$amis_sigma)
+amis_params$sigma <- as.numeric(opts$"amis-sigma")
 amis_params$boundaries <- c(-Inf, Inf)
 
 # shell to save trajectories
@@ -220,7 +221,8 @@ save(infections, file = file.path(kPathToInfections, paste0("infections", id, ".
 all_years_vector_id <- seq(1996, 2022, by = 0.25)
 weeks_indices <- as.integer(70 * 52 - 1 + (all_years_vector_id - min(years_vector)) * 52)
 initial_infect <- 0.1
-num_cores <- 8L
+num_cores <- as.integer(opts$"num-cores")
+
 
 model_func <- amis_int_mod$build_transmission_model(
   weeks_indices, initial_infect, num_cores

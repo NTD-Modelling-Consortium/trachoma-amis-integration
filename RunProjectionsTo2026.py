@@ -23,7 +23,7 @@ if not PATH_TO_WORKING_DIR or not PATH_TO_MODEL_DIR:
 PATH_TO_MAPS = PATH_TO_WORKING_DIR / "Maps"
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-d", "--folder_id", required=True, help="Folder ID for outputs")
+parser.add_argument("-d", "--folder-id", required=True, help="Folder ID for outputs")
 parser.add_argument(
     "-i",
     "--id",
@@ -31,10 +31,10 @@ parser.add_argument(
     help="Row index corresponding to the SLURM array task ID",
 )
 parser.add_argument(
-    "--num_cores", type=int, default=10, help="Number of CPU cores to use"
+    "--num-cores", type=int, default=10, help="Number of CPU cores to use"
 )
 parser.add_argument(
-    "--stop_importation",
+    "--stop-importation",
     action="store_true",
     help="Stop importation of infections based on IU-specific year",
 )

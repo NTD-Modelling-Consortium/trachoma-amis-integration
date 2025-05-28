@@ -4,7 +4,7 @@
 #### Things to note:
 - Past version of projections was missing any MDA from 2022, and fits are missing many surveillance surveys. The latest version of these scripts (in `trachoma-amis-integration`) should be the correct version but they haven't been run
 - The last runs in Feb 2025 were done on the cloud (<https://github.com/NTD-Modelling-Consortium/trachoma-docker-temp>) 
-- May want to consider running with sigma=0.025 where there are IUs with ESS<200 or batches that failed (we have done this for other diseases) using `run_historic_simulations.sh --id=<failed_id> --folder_id="source-data-<yyyymmdd>" --amis_sigma=0.025 [--stop_importation]`.
+- May want to consider running with sigma=0.025 where there are IUs with ESS<200 or batches that failed (we have done this for other diseases) using `python run_pipeline.py --id=<failed_id> --folder-id="source-data-<yyyymmdd>" --amis-sigma=0.025 [--stop_importation]`.
 - Keep note of which IUs had `ESS < 200` so that they can be excluded from the future projections (scenarios to 2040 run by Igor)
 
 ### Setup
@@ -31,27 +31,30 @@ The pipeline can be considered to have three broad stages, each corresponding to
 - The histories (for both fitting and projections) are saved inside the Docker container at `model/ntd-model-trachoma/trachoma/data/coverage/endgame_inputs`.
 - All scripts are meant to be executed inside the Docker container.
 
-The scripts in every stage can work with a single task/batch ID using the `--id` parameter. Some scripts expect the `SLURM_ARRAY_TASK_ID` environment variable to be defined if the `--id` argument is not provided. For convenience, a single entry point script `run_historical_simulations.sh` is provided which will execute the full pipeline. In normal usage, this is the only script that is needed.
+The scripts in every stage can work with a single task/batch ID using the `--id` parameter. Some scripts expect the `SLURM_ARRAY_TASK_ID` environment variable to be defined if the `--id` argument is not provided. For convenience, a single entry point script `run_pipeline.py` is provided which will execute the full pipeline. In normal usage, this is the only script that is needed.
 
 Assuming invoking the script from inside the Docker container's shell, it's usage is as follows - 
 ```shell
-Usage: ./run_historic_simulations.sh [options]
+Usage: ./run_pipeline.py [options] or python run_pipeline.py [options]
 
 Required arguments:
   --id=<id>              SLURM batch/task ID for fitting and historic simulations
-  --folder_id=<folder>   Folder for realocation (e.g., 'source-data-20250220')
+  --folder-id=<folder>   Folder for realocation (e.g., 'source-data-20250220')
 
 Optional arguments:
-  --failed_ids=<ids>     Comma-separated list of failed batch/task IDs to skip
-  --num_cores=<n>        Number of CPU cores to use for projections (default: 10)
-  --amis_sigma=<number>  AMIS 'sigma' parameter, expects a floating point number (default: 0.0025)
-  --stop_importation     Stop importation of infections based on IU-specific year
+  --failed-ids=<ids>     Comma-separated list of failed batch/task IDs to skip
+  --num-cores=<n>        Number of CPU cores to use for projections (default: 10)
+  --stop-importation     Stop importation of infections based on IU-specific year
+  --amis-sigma=<number>  AMIS 'sigma' parameter, expects a floating point number (default: 0.0025)
+  --amis-target-ess      Target ESS parameter for AMIS (default: 500)
+  --amis-n-samples       Number of AMIS samples (default: 1000)
+  --ess-threshold        ESS threshold parameter (default: 200)
   --help                 Show this help message
 ```
 For example,
 
 ```shell
-./run_historic_simulations.sh --id=11 --folder_id="source-data-20250525" --num_cores=1 --stop_importation
+python run_pipeline.py --id=11 --folder-id="source-data-20250525" --num-cores=1 --stop-importation
 ```
 
 This will produce the projections and place them inside the `model/ntd-model-trachoma/trachoma/projections`.
@@ -63,22 +66,25 @@ For more fine-grained usage where individual stages are invoked separately, pass
 #### Docker
 The pipeline can also be invoked using built container -
 ```shell
-docker run -v ./trachoma:/ntdmc/trachoma-amis-integration/model/ntd-model-trachoma/projections/trachoma trachoma-amis-pipeline:latest --id=<id> --folder_id="source-data-<yyyymmdd>" [--stop_importation] [--amis_sigma=<0.025>]
+docker run -v ./trachoma:/ntdmc/trachoma-amis-integration/model/ntd-model-trachoma/projections/trachoma trachoma-amis-pipeline:latest \
+  --id=<id> \
+  --folder-id="source-data-<yyyymmdd>" \
+  [--stop-importation] \
+  [--amis-sigma=<0.025>]
 ```
 This will produce the projections and place them inside the `trachoma` directory at the root of the repo on the host, allowing for easy access.
 
-#### Environment Variables
-
-The following environment variables can be defined to influence the speed of the fitting stage, for testing - 
+#### Speeding up the pipeline (testing/development)
+The AMIS related optional arguments can be specified to the `docker run` command to speed up the pipeline during testing/development, as follows, for example - 
 
 ```shell
-TARGET_ESS=500
-ESS_THRESHOLD=200
-AMIS_N_SAMPLES=1000
-```
-
-and specified with the `docker run` command as follows, for example - 
-```shell
-docker run -e TARGET_ESS=1 -e ESS_THRESHOLD=1 -e AMIS_N_SAMPLES=10 -v ./trachoma:/ntdmc/trachoma-amis-integration/model/ntd-model-trachoma/projections/trachoma trachoma-amis-pipeline:latest --id=<id> --folder_id="source-data-<yyyymmdd>" [--stop_importation] [--amis_sigma=<0.025>]
+docker run -v ./trachoma:/ntdmc/trachoma-amis-integration/model/ntd-model-trachoma/projections/trachoma trachoma-amis-pipeline:latest \
+  --id=<id> \
+  --folder-id="source-data-<yyyymmdd>" \
+  [--stop-importation] \
+  [--amis-sigma=<0.025>] \
+  [--amis-n-samples=10] \
+  [--amis-target-ess=1] \
+  [--ess-threshold=1]
 ```
 

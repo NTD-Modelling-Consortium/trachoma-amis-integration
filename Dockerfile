@@ -71,9 +71,7 @@ ADD preprocess_for_projections.R \
     realocate_InputPars_MTP.R \
     trachoma_fitting.R \
     RunProjectionsTo2026.py \
-    run_fit_and_process.sh \
-    run_proj.sh \
-    run_historic_simulations.sh ${TRACHOMA_AMIS_DIR}
+    run_pipeline.py ${TRACHOMA_AMIS_DIR}
 
 # Get trachoma model
 ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git ${TRACHOMA_MODEL_DIR}
@@ -86,9 +84,6 @@ RUN --mount=type=cache,target=/root/.cache/pip cd ${TRACHOMA_MODEL_DIR} && pip i
 
 ENV RETICULATE_PYTHON=/opt/conda/bin/python
 ENV RETICULATE_PYTHON_FALLBACK=FALSE
-ENV TARGET_ESS=500
-ENV ESS_THRESHOLD=200
-ENV AMIS_N_SAMPLES=1000
 
 VOLUME [${TRACHOMA_MODEL_DIR}/projections/trachoma]
-ENTRYPOINT [ "bash", "run_historic_simulations.sh" ]
+ENTRYPOINT [ "python", "run_pipeline.py" ]

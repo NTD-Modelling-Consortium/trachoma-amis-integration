@@ -9,6 +9,37 @@ kPathToMaps <- file.path(kPathToWorkingDir, "Maps")
 kPathToPostAmisAnalysis <- file.path(kPathToWorkingDir, "post_AMIS_analysis")
 kPathToAmisOutput <- file.path(kPathToWorkingDir, "AMIS_output")
 
+# Define command line options
+option_list <- list(
+  make_option(c("-i", "--id"),
+    type = "integer",
+    help = "Single ID to process. If not provided, will process all IDs"
+  ),
+  make_option(c("-s", "--species"),
+    type = "character",
+    default = "trachoma",
+    help = "Species to process [default=%default]"
+  ),
+  make_option(c("--ess-threshold"),
+    type = "integer",
+    default = 200,
+    help = "ESS threshold parameter (default: 200)"
+  ),
+  make_option(c("-f", "--failed-ids"),
+    type = "character",
+    default = "",
+    help = paste(
+      "Comma-separated list of failed IDs to skip.",
+      "Needs to be filled in once we know which batch-ids failed.",
+      "Will be ignored when a single ID is specified."
+    )
+  )
+)
+
+# Parse command line arguments
+opt_parser <- OptionParser(option_list = option_list)
+opts <- parse_args(opt_parser)
+
 create_directory_structure <- function(species) {
   kPathToInputParsMTP <- file.path(kPathToPostAmisAnalysis, paste0("InputPars_MTP_", species))
   if (!dir.exists(kPathToInputParsMTP)) {
@@ -49,12 +80,7 @@ process_batch <- function(id, amis_output_data, species = "trachoma") {
 
   #### Sample draws from the posterior
   num_sub_samples_posterior <- 200
-
-  ess_threshold <- as.numeric(Sys.getenv("ESS_THRESHOLD"))
-  if (is.na(ess_threshold)) {
-    print("Using default (200) SS threshold for preprocess_for_projecctions")
-    ess_threshold <- 200
-  }
+  ess_threshold <- opts$"ess-threshold"
 
   sampled_params_all <- c()
   for (iu in iu_names) {
@@ -77,40 +103,6 @@ process_batch <- function(id, amis_output_data, species = "trachoma") {
 
   sampled_params_all
 }
-
-# Define command line options
-option_list <- list(
-  make_option(c("-i", "--id"),
-    type = "integer",
-    help = "Single ID to process. If not provided, will process all IDs"
-  ),
-  make_option(c("-s", "--species"),
-    type = "character",
-    default = "trachoma",
-    help = "Species to process [default=%default]"
-  ),
-  make_option(c("-f", "--failed_ids"),
-    type = "character",
-    default = "",
-    help = paste(
-      "Comma-separated list of failed IDs to skip.",
-      "Needs to be filled in once we know which batch-ids failed.",
-      "Will be ignored when a single ID is specified."
-    )
-  )
-)
-
-# Parse command line arguments
-opt_parser <- OptionParser(option_list = option_list)
-opts <- parse_args(opt_parser)
-
-# Process failed IDs if provided
-failed_ids <- if (!is.null(opts$failed_ids)) {
-  as.numeric(strsplit(opts$failed_ids, ",")[[1]])
-} else {
-  c()
-}
-
 
 # Early Feb: second runs
 # from Igor's runs
@@ -143,6 +135,13 @@ if (!is.null(opts$id)) {
     cat(sprintf("Saved posterior parameter samples for single batch [%d] to: %s\n", opts$id, output_file))
   }
 } else {
+  # Process failed IDs if provided
+  failed_ids <- if (!is.null(opts$"failed-ids")) {
+    as.numeric(strsplit(opts$"failed-ids", ",")[[1]])
+  } else {
+    c()
+  }
+
   id_vec <- setdiff(1:max(iu_task_lookup$TaskID), c(failed_ids))
   cat(sprintf("Processing %d batch IDs\n", length(id_vec)))
 
