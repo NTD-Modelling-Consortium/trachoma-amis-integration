@@ -13,37 +13,37 @@ ENV TRACHOMA_AMIS_DIR=${TRACHOMA_AMIS_DIR}
 ENV TRACHOMA_MODEL_DIR=${TRACHOMA_MODEL_DIR}
 
 RUN apt update && apt install -y \
-        build-essential \
-        cmake \
-        vim \
-        curl \
-        git \
-        unzip \
-        openssh-client \
-        libssl-dev \
-        libgdal-dev \
-        libudunits2-dev
+    build-essential \
+    cmake \
+    vim \
+    curl \
+    git \
+    unzip \
+    openssh-client \
+    libssl-dev \
+    libgdal-dev \
+    libudunits2-dev
 
 RUN conda install --yes --name base \
-        python=3.10 \
-        pandas \
-        joblib \
-        r-base \
-        r-reticulate \
-        r-truncnorm \
-        r-dplyr \
-        r-magrittr \
-        r-invgamma \
-        r-tidyr \
-        r-devtools \
-        r-openxlsx \
-        r-hmisc \
-        r-mclust \
-        r-mnormt \
-        r-optparse \
-        r-sf \
-        r-renv && \
-        conda clean -a -y
+    python=3.10 \
+    pandas \
+    joblib \
+    r-base \
+    r-reticulate \
+    r-truncnorm \
+    r-dplyr \
+    r-magrittr \
+    r-invgamma \
+    r-tidyr \
+    r-devtools \
+    r-openxlsx \
+    r-hmisc \
+    r-mclust \
+    r-mnormt \
+    r-optparse \
+    r-sf \
+    r-renv && \
+    conda clean -a -y
 
 # Cannot activate the conda environment easily
 # So instead adjust shell to run everything inside Conda
@@ -58,9 +58,22 @@ RUN R --version && python --version
 
 # https://medium.com/datamindedbe/how-to-access-private-data-and-git-repositories-with-ssh-while-building-a-docker-image-a-ea283c0b4272
 RUN mkdir -p -m 0600 ~/.ssh && \
-        ssh-keyscan github.com >> ~/.ssh/known_hosts
+    ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/trachoma-amis-integration.git#256-trachoma-fit-docker-container ${TRACHOMA_AMIS_DIR}
+ADD ESPEN_IU_2021 ${TRACHOMA_AMIS_DIR}/ESPEN_IU_2021
+ADD Maps/prepare_histories_and_maps.R \
+    Maps/prepare_histories_projections.R \
+    Maps/trachoma_IU_Match_PB.csv \
+    Maps/trachomaComb_IU.csv ${TRACHOMA_AMIS_DIR}/Maps/
+ADD post_AMIS_analysis ${TRACHOMA_AMIS_DIR}/post_AMIS_analysis
+ADD trachoma_amis ${TRACHOMA_AMIS_DIR}/trachoma_amis
+ADD preprocess_for_projections.R \
+    realocate_InputPars_MTP.R \
+    trachoma_fitting.R \
+    RunProjectionsTo2026.py \
+    run_fit_and_process.sh \
+    run_proj.sh \
+    run_historic_simulations.sh ${TRACHOMA_AMIS_DIR}
 
 # Get trachoma model
 ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git ${TRACHOMA_MODEL_DIR}
@@ -70,7 +83,6 @@ WORKDIR ${TRACHOMA_AMIS_DIR}
 
 # Install the trachoma model
 RUN --mount=type=cache,target=/root/.cache/pip cd ${TRACHOMA_MODEL_DIR} && pip install .
-RUN --mount=type=cache,target=/root/.cache/pip pip install .
 
 ENV RETICULATE_PYTHON=/opt/conda/bin/python
 ENV RETICULATE_PYTHON_FALLBACK=FALSE
