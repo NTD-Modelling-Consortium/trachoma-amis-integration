@@ -75,7 +75,7 @@ ADD preprocess_for_projections.R \
 
 # Get trachoma model
 ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git ${TRACHOMA_MODEL_DIR}
-RUN cd ${TRACHOMA_MODEL_DIR} && git checkout acf7d8b
+RUN cd ${TRACHOMA_MODEL_DIR} && git checkout c1e627a
 
 WORKDIR ${TRACHOMA_AMIS_DIR}
 
