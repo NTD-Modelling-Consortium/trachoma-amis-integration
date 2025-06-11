@@ -11,16 +11,23 @@ from typing import Optional
 from pathlib import Path
 
 PATH_TO_WORKING_DIR = Path(os.getenv("TRACHOMA_AMIS_DIR", ""))
-PATH_TO_MODEL_DIR = Path(os.getenv("TRACHOMA_MODEL_DIR", ""))
+PATH_TO_PROJECTIONS_PREP_ARTEFACTS = Path(
+    os.getenv(
+        "PATH_TO_PROJECTIONS_PREP_ARTEFACTS",
+        PATH_TO_WORKING_DIR / "projections-prep/artefacts",
+    )
+)
+PATH_TO_PROJECTIONS_ARTEFACTS = Path(
+    os.getenv(
+        "PATH_TO_PROJECTIONS_ARTEFACTS", PATH_TO_WORKING_DIR / "projections/artefacts"
+    )
+)
 
-if not PATH_TO_WORKING_DIR or not PATH_TO_MODEL_DIR:
+if not PATH_TO_WORKING_DIR.exists:
     raise ValueError(
         """Please check environment variables are defined - 
-                       'TRACHOMA_AMIS_DIR',
-                       'TRACHOMA_MODEL_DIR' """
+                       'TRACHOMA_AMIS_DIR'"""
     )
-
-PATH_TO_MAPS = PATH_TO_WORKING_DIR / "Maps"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--folder-id", required=True, help="Folder ID for outputs")
@@ -239,7 +246,9 @@ def getResultsNTDMC(results, Start_date, burnin):
     This is the section which needs the most editing for each IU
 """
 
-pathCountry = PATH_TO_MAPS / "table_iu_idx_trachoma.csv"  # some path here
+pathCountry = (
+    PATH_TO_PROJECTIONS_PREP_ARTEFACTS / "table_iu_idx_trachoma.csv"
+)  # some path here
 df_IU_country = pd.read_csv(pathCountry)
 
 # Get all rows matching the task ID
@@ -265,7 +274,11 @@ for row_idx in batch_rows:
 
     print("Making projections for trachoma for IU " + str(iu).zfill(5) + "...")
     PATH_TO_ENDGAME_INPUTS = (
-        PATH_TO_MODEL_DIR / "trachoma" / "data" / "coverage" / "endgame_inputs"
+        PATH_TO_PROJECTIONS_PREP_ARTEFACTS
+        / "trachoma"
+        / "data"
+        / "coverage"
+        / "endgame_inputs"
     )
     mda_filepath = PATH_TO_ENDGAME_INPUTS / f"InputMDA_MTP_projections_{iu}.csv"
 
@@ -274,7 +287,7 @@ for row_idx in batch_rows:
     """
     # ParamFilePath = '~/Documents/trachoma/post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_' + str(iu) + '.csv'
     ParamFilePath = (
-        PATH_TO_MODEL_DIR
+        PATH_TO_PROJECTIONS_PREP_ARTEFACTS
         / "projections"
         / SPECIES
         / str(folder_id)
@@ -375,7 +388,7 @@ for row_idx in batch_rows:
 
     # want outputs like <ascaris-folder>/AGO/AGO02049/Asc_AGO02049.p
     newOutputSimDataFilePath = (
-        PATH_TO_MODEL_DIR
+        PATH_TO_PROJECTIONS_ARTEFACTS
         / "projections"
         / SPECIES
         / str(folder_id)
@@ -417,7 +430,7 @@ for row_idx in batch_rows:
     NTDMC = getResultsNTDMC(results, START_DATE, sim_params["burnin"])
 
     PrevDatasetFilePath = (
-        PATH_TO_MODEL_DIR
+        PATH_TO_PROJECTIONS_ARTEFACTS
         / "projections"
         / SPECIES
         / str(folder_id)

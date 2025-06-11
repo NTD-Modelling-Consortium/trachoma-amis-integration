@@ -5,7 +5,10 @@ library(optparse)
 
 
 kPathToWorkingDir <- Sys.getenv("TRACHOMA_AMIS_DIR")
-kPathToMaps <- file.path(kPathToWorkingDir, "Maps")
+kPathToFittingPrepArtefacts <- Sys.getenv("PATH_TO_FITTING_PREP_ARTEFACTS")
+kPathToMaps <- file.path(kPathToFittingPrepArtefacts, "Maps")
+kPathToProjectionsPrepInputs <- file.path(Sys.getenv("PATH_TO_PROJECTIONS_PREP_INPUTS"))
+kPathToProjectionsPrepArtefacts <- Sys.getenv("PATH_TO_PROJECTIONS_PREP_ARTEFACTS")
 
 load(file.path(kPathToMaps, "trachoma_maps.rds"))
 load(file.path(kPathToMaps, "trachoma_data.Rdata"))
@@ -52,7 +55,7 @@ projections_histories <- trachoma_data_joined %>%
   filter(IU_ID %in% new_surveys_completed$IU_ID) %>%
   pivot_wider(names_from = Year, values_from = PC_in_group)
 
-write.csv(trachoma_data_joined, file = file.path(kPathToMaps, "mda_history_trachoma.csv"))
+write.csv(trachoma_data_joined, file = file.path(kPathToProjectionsPrepArtefacts, "mda_history_trachoma.csv"))
 
 
 # save MDA inputs for python model
@@ -76,8 +79,10 @@ coverage_wide <- projections_histories %>%
   )
 
 # export histories files
-kPathToModel <- file.path(Sys.getenv("TRACHOMA_MODEL_DIR"))
-kPathToEndgameInputs <- file.path(kPathToModel, "trachoma", "data", "coverage", "endgame_inputs")
+kPathToEndgameInputs <- file.path(
+  kPathToProjectionsPrepArtefacts,
+  "trachoma", "data", "coverage", "endgame_inputs"
+)
 if (!dir.exists(kPathToEndgameInputs)) {
   dir.create(kPathToEndgameInputs, recursive = T)
 }
@@ -136,7 +141,7 @@ table_iu_idx <- trachoma_maps[[1]]$data[, c("IU_ID", "TaskID")]
 colnames(table_iu_idx) <- c("IU_ID", "TaskID")
 rownames(table_iu_idx) <- NULL
 
-df <- read_sf(dsn = file.path(kPathToWorkingDir, "ESPEN_IU_2021"), layer = "ESPEN_IU_2021") %>%
+df <- read_sf(dsn = file.path(kPathToProjectionsPrepInputs, "ESPEN_IU_2021"), layer = "ESPEN_IU_2021") %>%
   filter(IU_ID %in% table_iu_idx$IU_ID)
 df <- st_drop_geometry(df[, c("IU_ID", "ADMIN0ISO3")])
 head(df)
@@ -160,4 +165,4 @@ last_survey_year <- new_surveys_completed %>%
 table_iu_idx <- table_iu_idx %>%
   left_join(last_survey_year)
 
-write.csv(table_iu_idx, file = file.path(kPathToMaps, "table_iu_idx_trachoma.csv"), row.names = F)
+write.csv(table_iu_idx, file = file.path(kPathToProjectionsPrepArtefacts, "table_iu_idx_trachoma.csv"), row.names = F)

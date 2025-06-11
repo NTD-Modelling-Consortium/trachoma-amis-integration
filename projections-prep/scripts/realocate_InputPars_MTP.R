@@ -8,6 +8,7 @@ kPathToModel <- Sys.getenv("TRACHOMA_MODEL_DIR")
 kPathToMaps <- file.path(kPathToWorkingDir, "Maps")
 kPathToPostAmisAnalysis <- file.path(kPathToWorkingDir, "post_AMIS_analysis")
 kPathToAmisOutput <- file.path(kPathToWorkingDir, "AMIS_output")
+kPathToProjectionsPrepArtefacts <- Sys.getenv("PATH_TO_PROJECTIONS_PREP_ARTEFACTS")
 
 set.seed(123)
 
@@ -104,7 +105,7 @@ process_all_batches <- function(df_iu_country, failed_ids, folder_id) {
 }
 
 process_batch <- function(id, amis_output_data, df_iu_country, folder_id, species = "trachoma") {
-  kPathToModelProjections <- file.path(kPathToModel, "projections")
+  kPathToModelProjections <- file.path(kPathToProjectionsPrepArtefacts, "projections")
   kPathToFolderId <- file.path(kPathToModelProjections, species, folder_id)
 
   iu_names <- rownames(amis_output$prevalence_map[[1]]$data)

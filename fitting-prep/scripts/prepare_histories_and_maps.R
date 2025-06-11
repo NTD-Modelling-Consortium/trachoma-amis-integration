@@ -3,14 +3,17 @@ library(tidyr)
 library(optparse)
 
 kPathToWorkingDir <- Sys.getenv("TRACHOMA_AMIS_DIR")
-kPathToMaps <- file.path(kPathToWorkingDir, "Maps")
+kPathToInputs <- Sys.getenv("PATH_TO_FITTING_PREP_INPUTS")
+kPathToArtefacts <- Sys.getenv("PATH_TO_FITTING_PREP_ARTEFACTS")
+kPathToModelOutput <- file.path(kPathToArtefacts, "model_output")
+kPathToMaps <- file.path(kPathToArtefacts, "Maps")
 
 other_prev_categories <- c("Endemicity unknown", "Not Suspected", "Suspected Endemic") # ignore these
 post_mda_surv <- "Under post-MDA surveillance" # set to <5% tf_prevalence
 
 # Read in data
-trachoma_Geoconnect_to_IUID <- read.csv(file.path(kPathToMaps, "trachoma_IU_Match_PB.csv")) # PB's lookup table fo mapping Geoconnect_ID to IU_ID
-trachoma_data_raw <- read.csv(file.path(kPathToMaps, "trachomaComb_IU.csv")) %>%
+trachoma_Geoconnect_to_IUID <- read.csv(file.path(kPathToInputs, "trachoma_IU_Match_PB.csv")) # PB's lookup table fo mapping Geoconnect_ID to IU_ID
+trachoma_data_raw <- read.csv(file.path(kPathToInputs, "trachomaComb_IU.csv")) %>%
   left_join(trachoma_Geoconnect_to_IUID %>% select(Geoconnect_ID, IU_ID), by = "Geoconnect_ID")
 
 # there are 10 Geoconnect IDs that could not be mapped to IU_ID
@@ -195,8 +198,7 @@ coverage_wide <- trachoma_histories %>%
   )
 
 # export histories files
-kPathToModel <- file.path(Sys.getenv("TRACHOMA_MODEL_DIR"))
-kPathToEndgameInputs <- file.path(kPathToModel, "trachoma", "data", "coverage", "endgame_inputs")
+kPathToEndgameInputs <- file.path(kPathToArtefacts, "trachoma", "data", "coverage", "endgame_inputs")
 if (!dir.exists(kPathToEndgameInputs)) {
   dir.create(kPathToEndgameInputs, recursive = T)
 }

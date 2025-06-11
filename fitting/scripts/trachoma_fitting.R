@@ -4,9 +4,10 @@ library(AMISforInfectiousDiseases)
 library(truncnorm)
 library(optparse)
 
-kPathToWorkingDir <- Sys.getenv("TRACHOMA_AMIS_DIR")
-kPathToMaps <- file.path(kPathToWorkingDir, "Maps")
-kPathToAmisOutput <- file.path(kPathToWorkingDir, "AMIS_output")
+kPathToFittingPrepArtefacts <- Sys.getenv("PATH_TO_FITTING_PREP_ARTEFACTS")
+kPathToMaps <- file.path(kPathToFittingPrepArtefacts, "Maps")
+kPathToArtefacts <- Sys.getenv("PATH_TO_FITTING_ARTEFACTS")
+kPathToAmisOutput <- file.path(kPathToArtefacts, "AMIS_output")
 
 option_list <- list(
   make_option(c("-i", "--id"),
@@ -199,7 +200,7 @@ amis_params$sigma <- as.numeric(opts$"amis-sigma")
 amis_params$boundaries <- c(-Inf, Inf)
 
 # shell to save trajectories
-kPathToTrajectories <- file.path(kPathToWorkingDir, "trajectories")
+kPathToTrajectories <- file.path(kPathToArtefacts, "trajectories")
 trajectories <- c() # save simulated trajectories as code is running
 if (!dir.exists(kPathToTrajectories)) {
   dir.create(kPathToTrajectories)
@@ -207,7 +208,7 @@ if (!dir.exists(kPathToTrajectories)) {
 save(trajectories, file = file.path(kPathToTrajectories, paste0("trajectories_", id, ".Rdata")))
 
 # save infection
-kPathToInfections <- file.path(kPathToWorkingDir, "infections")
+kPathToInfections <- file.path(kPathToArtefacts, "infections")
 infections <- c() # save simulated infections as code is running
 if (!dir.exists(kPathToInfections)) {
   dir.create(kPathToInfections)

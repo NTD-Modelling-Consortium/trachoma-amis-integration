@@ -3,7 +3,17 @@ import argparse
 import os
 import subprocess
 import sys
+import enum
 from pathlib import Path
+
+
+class Stage(enum.Enum):
+    FITTING_PREP = "fitting-prep"
+    FITTING = "fitting"
+    PROJECTIONS_PREP = "projections-prep"
+    NEARTERM_PROJECTIONS = "nearterm-projections"
+    ALL = "all"
+    SKIP_FITTING_PREP = "skip-fitting-prep"
 
 
 def validate_environment():
@@ -164,6 +174,38 @@ def main():
             "Realocating projections",
         ):
             return 1
+
+        # /ntdmc/trachoma-amis-integration/model/ntd-model-trachoma/projections/trachoma/source-data-20250529/BFA/BFA05328/InputBet_BFA05328.csv
+        PATH_TO_MODEL_DIR = Path(
+            os.getenv("TRACHOMA_MODEL_DIR", "model/ntd-model-trachoma")
+        )
+
+        # Extract the countries corresponding to the `id` from the `Maps/table_iu_idx_trachoma.csv` file
+        if args.id:
+            import pandas as pd
+
+            PATH_TO_WORKING_DIR = Path(os.getenv("TRACHOMA_AMIS_DIR", "."))
+            PATH_TO_PROJECTIONS_PREP_ARTEFACTS = (
+                PATH_TO_WORKING_DIR / "projections-prep" / "artefacts"
+            )
+            df_ius = pd.read_csv(
+                PATH_TO_PROJECTIONS_PREP_ARTEFACTS / "table_iu_idx_trachoma.csv"
+            )
+            countries = df_ius[df_ius["TaskID"] == int(args.id)]["country"]
+            iu_ids = df_ius[df_ius["TaskID"] == int(args.id)]["IU_ID"]
+            for country, iu_id in zip(countries, iu_ids):
+                input_bet_file = (
+                    PATH_TO_PROJECTIONS_PREP_ARTEFACTS
+                    / "projections"
+                    / "trachoma"
+                    / args.folder_id
+                    / f"{country}/{iu_id}/InputBet_{iu_id}.csv"
+                )
+                if not input_bet_file.exists():
+                    print(
+                        f"InputBet file does not exist for {iu_id}. Skipping projections for this ID = {args.id}."
+                    )
+                    exit(1)
 
         # Step 3: Run historic simulations
         proj_args = [f"--folder-id='{args.folder_id}'"]

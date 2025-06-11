@@ -4,10 +4,12 @@ library(tidyr)
 library(optparse)
 
 kPathToWorkingDir <- Sys.getenv("TRACHOMA_AMIS_DIR")
-kPathToModel <- Sys.getenv("TRACHOMA_MODEL_DIR")
-kPathToMaps <- file.path(kPathToWorkingDir, "Maps")
 kPathToPostAmisAnalysis <- file.path(kPathToWorkingDir, "post_AMIS_analysis")
-kPathToAmisOutput <- file.path(kPathToWorkingDir, "AMIS_output")
+kPathToModel <- Sys.getenv("TRACHOMA_MODEL_DIR")
+kPathToFittingPrepArtefacts <- Sys.getenv("PATH_TO_FITTING_PREP_ARTEFACTS")
+kPathToMaps <- file.path(kPathToFittingPrepArtefacts, "Maps")
+kPathToFittingArtefacts <- Sys.getenv("PATH_TO_FITTING_ARTEFACTS")
+kPathToAmisOutput <- file.path(kPathToFittingArtefacts, "AMIS_output")
 
 # Define command line options
 option_list <- list(
