@@ -12,8 +12,8 @@ other_prev_categories <- c("Endemicity unknown", "Not Suspected", "Suspected End
 post_mda_surv <- "Under post-MDA surveillance" # set to <5% tf_prevalence
 
 # Read in data
-trachoma_Geoconnect_to_IUID <- read.csv(file.path(kPathToInputs, "trachoma_IU_Match_PB.csv")) # PB's lookup table fo mapping Geoconnect_ID to IU_ID
-trachoma_data_raw <- read.csv(file.path(kPathToInputs, "trachomaComb_IU.csv")) %>%
+trachoma_Geoconnect_to_IUID <- read.csv(file.path(kPathToInputs, "Maps", "trachoma_IU_Match_PB.csv")) # PB's lookup table fo mapping Geoconnect_ID to IU_ID
+trachoma_data_raw <- read.csv(file.path(kPathToInputs, "Maps", "trachomaComb_IU.csv")) %>%
   left_join(trachoma_Geoconnect_to_IUID %>% select(Geoconnect_ID, IU_ID), by = "Geoconnect_ID")
 
 # there are 10 Geoconnect IDs that could not be mapped to IU_ID
