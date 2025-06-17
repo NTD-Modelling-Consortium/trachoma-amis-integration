@@ -389,7 +389,6 @@ for row_idx in batch_rows:
     # want outputs like <ascaris-folder>/AGO/AGO02049/Asc_AGO02049.p
     newOutputSimDataFilePath = (
         PATH_TO_PROJECTIONS_ARTEFACTS
-        / "projections"
         / SPECIES
         / str(folder_id)
         / country
@@ -431,7 +430,6 @@ for row_idx in batch_rows:
 
     PrevDatasetFilePath = (
         PATH_TO_PROJECTIONS_ARTEFACTS
-        / "projections"
         / SPECIES
         / str(folder_id)
         / country

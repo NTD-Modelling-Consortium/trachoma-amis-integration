@@ -8,10 +8,10 @@ CONTAINER_NAME="trachoma-amis-pipeline-run-$(date +%s)"
 
 # Define directory mappings
 HOST_DIRS=(
-    "./artefacts/fitting-prep"
-    "./artefacts/fitting"
-    "./artefacts/projections-prep"
-    "./artefacts/projections"
+    "./fitting-prep/artefacts"
+    "./fitting/artefacts"
+    "./projections-prep/artefacts"
+    "./projections/artefacts"
 )
 
 CONTAINER_DIRS=(
@@ -35,11 +35,16 @@ for host_dir in "${HOST_DIRS[@]}"; do
     mkdir -p "$host_dir"
 done
 
-# Run container
-echo "Running pipeline..."
-if docker run --name "$CONTAINER_NAME" "$IMAGE" "$@"; then
-    echo "Pipeline completed successfully"
+# Check for help flag
+for arg in "$@"; do
+    if [ "$arg" = "--help" ] || [ "$arg" = "-h" ]; then
+        docker run --name "$CONTAINER_NAME" "$IMAGE" --help
+        exit 0
+    fi
+done
 
+# Run container
+if docker run --name "$CONTAINER_NAME" "$IMAGE" "$@"; then
     # Copy data to host only if successful
     echo "Copying results to host..."
     for i in "${!HOST_DIRS[@]}"; do
