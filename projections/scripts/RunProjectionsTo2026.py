@@ -23,7 +23,7 @@ PATH_TO_PROJECTIONS_ARTEFACTS = Path(
     )
 )
 
-if not PATH_TO_WORKING_DIR.exists:
+if not PATH_TO_WORKING_DIR.exists():
     raise ValueError(
         """Please check environment variables are defined - 
                        'TRACHOMA_AMIS_DIR'"""
