@@ -75,7 +75,7 @@ ADD https://storage.googleapis.com/ntd-data-storage/pipeline/trachoma/Maps.tar.g
 ADD https://storage.googleapis.com/ntd-data-storage/pipeline/trachoma/ESPEN_IU_2021.tar.gz ${PROJECTIONS_PREP_DIR}/inputs/
 
 # Get trachoma model
-ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git ${TRACHOMA_MODEL_DIR}
+ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git#v2.0.0 ${TRACHOMA_MODEL_DIR}
 RUN cd ${TRACHOMA_MODEL_DIR}
 
 WORKDIR ${TRACHOMA_AMIS_DIR}
