@@ -16,17 +16,62 @@
   This assumes that you have added the SSH keys on your system to your Github account.
 
 ### Pipeline
-The pipeline can be considered to have three broad stages, each corresponding to some scripts -
-1. **Fitting Preparation**
-    - `prepare_histories_and_maps.R`: produces maps and histories from 1996-2021.
-2. **Fitting**
-    - `trachoma_fitting.R`
-3. **Projections Preparation**
-    - `prepare_histories_projections.R`: produces the histories from 1996-2025.
-    - `preprocess_projections.R`: creates the `amis-n-samples (default=200)` parameter vectors (simulated from the fitted models) used in projections.
-    - `realocate_InputPars_MTP.R`: reorganizes the files with the `amis-n-samples (default=200)` samples used in projections, so that they are organized in the expected file hierarchy in the cloud.
-4. **Projections**
-    - `RunProjectionsTo2026.py`: runs the near-term projections for each IU, optionally with stopping importation after last survey year.
+The pipeline can be considered to have four broad stages, each corresponding to some scripts and generating specific output files:
+
+#### 1. **Fitting Preparation** (`--stage=fitting-prep`)
+**Script:** `prepare_histories_and_maps.R` - produces maps and histories from 1996-2021.
+
+**Output Location:** `fitting-prep/artefacts/`
+
+**Generated Files:**
+- **Maps directory:**
+  - `trachoma_espen_data.Rdata` - Processed ESPEN trachoma data
+  - `trachoma_data.Rdata` - Aggregated trachoma data by IU/year
+  - `iu_task_lookup.Rdata` - IU to TaskID lookup table
+  - `trachoma_map_years.rds` - Years with survey data
+  - `trachoma_maps.rds` - Processed trachoma maps with likelihood functions
+  - `table_iu_idx_trachoma.csv` - IU/TaskID/country lookup table
+- **Endgame inputs directory:**
+  - `IUs_MTP_{id}.csv` - IU lists per batch
+  - `InputMDA_MTP_{id}.csv` - MDA coverage data per batch
+
+#### 2. **Fitting** (`--stage=fitting`)
+**Script:** `trachoma_fitting.R` - runs AMIS fitting algorithm for each batch.
+
+**Output Location:** `fitting/artefacts/`
+
+**Generated Files:**
+- `trajectories/trajectories_{id}.Rdata` - Simulated trajectories per batch
+- `infections/infections{id}.Rdata` - Simulated infections per batch
+- `AMIS_output/amis_output{id}.Rdata` - AMIS algorithm results per batch
+- `ESS_NOT_REACHED.txt` - Log of batches where ESS target wasn't reached
+- `summary.csv` - Summary statistics for all batch runs
+
+#### 3. **Projections Preparation** (`--stage=projections-prep`)
+**Scripts:**
+- `prepare_histories_projections.R`: produces the histories from 1996-2025.
+- `preprocess_for_projections.R`: creates the `amis-n-samples (default=200)` parameter vectors (simulated from the fitted models) used in projections.
+- `realocate_InputPars_MTP.R`: reorganizes the files with the `amis-n-samples (default=200)` samples used in projections, so that they are organized in the expected file hierarchy in the cloud.
+
+**Output Location:** `projections-prep/artefacts/`
+
+**Generated Files:**
+- `mda_history_trachoma.csv` - MDA history data
+- `trachoma/data/coverage/endgame_inputs/IUs_MTP_{id}.csv` - IU lists per batch
+- `trachoma/data/coverage/endgame_inputs/InputMDA_MTP_projections_{iu}.csv` - MDA coverage per IU
+- `post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_{iu}.csv` - Parameters per IU
+- `post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_{id}.rds` - Parameters per batch
+- `post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_allIUs.rds` - All IU parameters
+- `projections/trachoma/{folder_id}/{country}/{country}{iu}/InputBet_{country}{iu}.csv` - Expanded parameters per IU
+
+#### 4. **Near-term Projections** (`--stage=nearterm-projections`)
+**Script:** `RunProjectionsTo2026.py` - runs the near-term projections for each IU, optionally with stopping importation after last survey year.
+
+**Output Location:** `projections/artefacts/trachoma/{folder_id}/{country}/{country}{iu}/`
+
+**Generated Files:**
+- `Trachoma_{country}{iu}.p` - Simulation results (pickle format)
+- `PrevDataset_Trachoma_{country}{iu}.csv` - Prevalence datasets (NTDMC format)
 
 **NOTE**:
 - The histories (for both fitting and projections) generated in the `fitting-prep` and `projections-prep` stages, are saved inside the Docker container at `fitting-prep/artefacts/trachoma/data/coverage/endgame_inputs` and `projections-prep/artefacts/trachoma/data/coverage/endgame_inputs` respectively.

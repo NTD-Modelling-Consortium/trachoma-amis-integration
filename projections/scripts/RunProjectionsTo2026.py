@@ -11,6 +11,12 @@ from typing import Optional
 from pathlib import Path
 
 PATH_TO_WORKING_DIR = Path(os.getenv("TRACHOMA_AMIS_DIR", ""))
+PATH_TO_FITTING_PREP_ARTEFACTS = Path(
+    os.getenv(
+        "PATH_TO_FITTING_PREP_ARTEFACTS",
+        PATH_TO_WORKING_DIR / "fitting-prep/artefacts",
+    )
+)
 PATH_TO_PROJECTIONS_PREP_ARTEFACTS = Path(
     os.getenv(
         "PATH_TO_PROJECTIONS_PREP_ARTEFACTS",
@@ -247,7 +253,7 @@ def getResultsNTDMC(results, Start_date, burnin):
 """
 
 pathCountry = (
-    PATH_TO_PROJECTIONS_PREP_ARTEFACTS / "table_iu_idx_trachoma.csv"
+    PATH_TO_FITTING_PREP_ARTEFACTS / "table_iu_idx_trachoma.csv"
 )  # some path here
 df_IU_country = pd.read_csv(pathCountry)
 
