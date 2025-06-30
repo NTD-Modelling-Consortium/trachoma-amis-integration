@@ -116,7 +116,7 @@ def do_fitting_prep(args):
 
     r_args = get_args_for_fitting_prep(args)
     command = (
-        f"Rscript f{PATH_TO_SCRIPTS}/prepare_histories_and_maps.R {' '.join(r_args)}"
+        f"Rscript {PATH_TO_SCRIPTS}/prepare_histories_and_maps.R {' '.join(r_args)}"
     )
     return run_command(command, "Preparing histories and maps")
 
@@ -139,15 +139,33 @@ def do_projections_prep(args):
     )
 
     scripts = [
-        PATH_TO_SCRIPTS / "prepare_histories_projections.R",
-        PATH_TO_SCRIPTS / "preprocess_for_projections.R",
-        PATH_TO_SCRIPTS / "realocate_InputPars_MTP.R",
+        {
+            "path": PATH_TO_SCRIPTS / "prepare_histories_projections.R",
+            "args": set(["--id"]),
+        },
+        {
+            "path": PATH_TO_SCRIPTS / "preprocess_for_projections.R",
+            "args": set(["--id", "--ess-threshold", "--failed-ids", "--species"]),
+        },
+        {
+            "path": PATH_TO_SCRIPTS / "realocate_InputPars_MTP.R",
+            "args": set(
+                [
+                    "--id",
+                    "--species",
+                    "--folder-id",
+                    "--ess-threshold",
+                    "--failed-ids",
+                ]
+            ),
+        },
     ]
 
     r_args = get_args_for_projections_prep(args)
     for script in scripts:
-        command = f"Rscript {script} {' '.join(r_args)}"
-        if not run_command(command, f"Running {script.name}"):
+        script_args: set = script["args"]
+        command = f"Rscript {script['path']} {' '.join(script_args.intersection(set(r_args)))}"
+        if not run_command(command, f"Running {script['path'].name}"):
             return False
     return True
 
@@ -191,10 +209,10 @@ def do_nearterm_projections(args):
 
 
 STAGE_SEQUENCE_MAP = {
-    Stage.FITTING_PREP.value: do_fitting_prep,
-    Stage.FITTING.value: do_fitting,
-    Stage.PROJECTIONS_PREP.value: do_projections_prep,
-    Stage.NEARTERM_PROJECTIONS.value: do_nearterm_projections,
+    Stage.FITTING_PREP.value: (do_fitting_prep,),
+    Stage.FITTING.value: (do_fitting,),
+    Stage.PROJECTIONS_PREP.value: (do_projections_prep,),
+    Stage.NEARTERM_PROJECTIONS.value: (do_nearterm_projections,),
     Stage.ALL.value: (
         do_fitting_prep,
         do_fitting,
@@ -315,6 +333,9 @@ def main():
             if args.failed_ids:
                 print("Warning: --failed-ids is ignored when --id is specified")
 
+        print(
+            f"args.stage = {args.stage} -> functions = {STAGE_SEQUENCE_MAP[args.stage]}"
+        )
         for stage_function in STAGE_SEQUENCE_MAP[args.stage]:
             print(f"Running stage: {stage_function.__name__}")
             if not stage_function(args):

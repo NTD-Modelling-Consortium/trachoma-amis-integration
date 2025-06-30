@@ -36,6 +36,10 @@ trachoma_espen_data <- trachoma_data_raw %>%
     tf_prevalence == ">=50%" ~ 1
   ))
 
+if (!dir.exists(kPathToMaps)) {
+  dir.create(kPathToMaps, recursive = TRUE)
+}
+
 save(trachoma_espen_data, file = file.path(kPathToMaps, "trachoma_espen_data.Rdata"))
 
 # select relevant columns

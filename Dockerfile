@@ -72,7 +72,15 @@ ADD post_AMIS_analysis ${TRACHOMA_AMIS_DIR}/post_AMIS_analysis
 ADD run_pipeline.py ${TRACHOMA_AMIS_DIR}
 
 ADD https://storage.googleapis.com/ntd-data-storage/pipeline/trachoma/Maps.tar.gz ${FITTING_PREP_DIR}/inputs/
+ADD https://storage.googleapis.com/ntd-data-storage/pipeline/trachoma/fitting-prep-artefacts.tar.gz ${FITTING_PREP_DIR}/artefacts/
 ADD https://storage.googleapis.com/ntd-data-storage/pipeline/trachoma/ESPEN_IU_2021.tar.gz ${PROJECTIONS_PREP_DIR}/inputs/
+
+RUN tar -xzf ${FITTING_PREP_DIR}/inputs/Maps.tar.gz -C ${FITTING_PREP_DIR}/inputs/ && \
+    rm ${FITTING_PREP_DIR}/inputs/Maps.tar.gz
+RUN tar -xzf ${FITTING_PREP_DIR}/artefacts/fitting-prep-artefacts.tar.gz -C ${FITTING_PREP_DIR}/artefacts/ && \
+    rm ${FITTING_PREP_DIR}/artefacts/fitting-prep-artefacts.tar.gz
+RUN tar -xzf ${PROJECTIONS_PREP_DIR}/inputs/ESPEN_IU_2021.tar.gz -C ${PROJECTIONS_PREP_DIR}/inputs/ && \
+    rm ${PROJECTIONS_PREP_DIR}/inputs/ESPEN_IU_2021.tar.gz
 
 # Get trachoma model
 ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git#v2.0.0 ${TRACHOMA_MODEL_DIR}

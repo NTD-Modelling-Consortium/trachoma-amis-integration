@@ -5,10 +5,10 @@ library("optparse")
 
 kPathToWorkingDir <- Sys.getenv("TRACHOMA_AMIS_DIR")
 kPathToModel <- Sys.getenv("TRACHOMA_MODEL_DIR")
-kPathToMaps <- file.path(kPathToWorkingDir, "Maps")
 kPathToPostAmisAnalysis <- file.path(kPathToWorkingDir, "post_AMIS_analysis")
 kPathToAmisOutput <- file.path(kPathToWorkingDir, "AMIS_output")
 kPathToProjectionsPrepArtefacts <- Sys.getenv("PATH_TO_PROJECTIONS_PREP_ARTEFACTS")
+kPathToMaps <- file.path(kPathToProjectionsPrepArtefacts, "Maps")
 
 set.seed(123)
 
