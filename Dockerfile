@@ -8,9 +8,10 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ARG TRACHOMA_AMIS_DIR=/ntdmc/trachoma-amis-integration
 ARG TRACHOMA_MODEL_DIR=${TRACHOMA_AMIS_DIR}/model/ntd-model-trachoma
-
-ENV TRACHOMA_AMIS_DIR=${TRACHOMA_AMIS_DIR}
-ENV TRACHOMA_MODEL_DIR=${TRACHOMA_MODEL_DIR}
+ARG FITTING_PREP_DIR=${TRACHOMA_AMIS_DIR}/fitting-prep
+ARG FITTING_DIR=${TRACHOMA_AMIS_DIR}/fitting
+ARG PROJECTIONS_PREP_DIR=${TRACHOMA_AMIS_DIR}/projections-prep
+ARG PROJECTIONS_DIR=${TRACHOMA_AMIS_DIR}/projections
 
 RUN apt update && apt install -y \
     build-essential \
@@ -24,7 +25,7 @@ RUN apt update && apt install -y \
     libgdal-dev \
     libudunits2-dev
 
-RUN conda install --yes --name base \
+RUN conda install --override-channels -c conda-forge -c r --yes --name base \
     python=3.10 \
     pandas \
     joblib \
@@ -42,8 +43,7 @@ RUN conda install --yes --name base \
     r-mnormt \
     r-optparse \
     r-sf \
-    r-renv && \
-    conda clean -a -y
+    r-renv
 
 # Cannot activate the conda environment easily
 # So instead adjust shell to run everything inside Conda
@@ -51,7 +51,9 @@ RUN conda install --yes --name base \
 # https://pythonspeed.com/articles/activate-conda-dockerfile/
 SHELL ["conda", "run", "--no-capture-output", "/bin/bash", "-c"]
 
-RUN Rscript -e "install.packages('AMISforInfectiousDiseases', repos='https://cloud.r-project.org/')"
+RUN Rscript -e "install.packages('weights', repos='https://cran.r-project.org/', lib='/opt/conda/lib/R/library')"
+RUN Rscript -e "install.packages('AMISforInfectiousDiseases', repos='https://cran.r-project.org/', lib='/opt/conda/lib/R/library')"
+RUN conda clean -a -y
 
 # Verify installations
 RUN R --version && python --version
@@ -60,30 +62,47 @@ RUN R --version && python --version
 RUN mkdir -p -m 0600 ~/.ssh && \
     ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-ADD ESPEN_IU_2021 ${TRACHOMA_AMIS_DIR}/ESPEN_IU_2021
-ADD Maps/prepare_histories_and_maps.R \
-    Maps/prepare_histories_projections.R \
-    Maps/trachoma_IU_Match_PB.csv \
-    Maps/trachomaComb_IU.csv ${TRACHOMA_AMIS_DIR}/Maps/
+# Copy the scripts into the container
+# Order of the scripts follows the stages of the pipeline
+ADD fitting-prep ${FITTING_PREP_DIR}
+ADD fitting ${FITTING_DIR}
+ADD projections-prep ${PROJECTIONS_PREP_DIR}
+ADD projections ${PROJECTIONS_DIR}
 ADD post_AMIS_analysis ${TRACHOMA_AMIS_DIR}/post_AMIS_analysis
-ADD trachoma_amis ${TRACHOMA_AMIS_DIR}/trachoma_amis
-ADD preprocess_for_projections.R \
-    realocate_InputPars_MTP.R \
-    trachoma_fitting.R \
-    RunProjectionsTo2026.py \
-    run_pipeline.py ${TRACHOMA_AMIS_DIR}
+ADD run_pipeline.py ${TRACHOMA_AMIS_DIR}
+
+ADD https://storage.googleapis.com/ntd-data-storage/pipeline/trachoma/Maps.tar.gz ${FITTING_PREP_DIR}/inputs/
+ADD https://storage.googleapis.com/ntd-data-storage/pipeline/trachoma/ESPEN_IU_2021.tar.gz ${PROJECTIONS_PREP_DIR}/inputs/
 
 # Get trachoma model
-ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git ${TRACHOMA_MODEL_DIR}
-RUN cd ${TRACHOMA_MODEL_DIR} && git checkout c1e627a
+ADD --keep-git-dir git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git#v2.0.0 ${TRACHOMA_MODEL_DIR}
+RUN cd ${TRACHOMA_MODEL_DIR}
 
 WORKDIR ${TRACHOMA_AMIS_DIR}
 
 # Install the trachoma model
 RUN --mount=type=cache,target=/root/.cache/pip cd ${TRACHOMA_MODEL_DIR} && pip install .
 
+ENV TRACHOMA_AMIS_DIR=${TRACHOMA_AMIS_DIR}
+ENV TRACHOMA_MODEL_DIR=${TRACHOMA_MODEL_DIR}
+ENV PATH_TO_FITTING_PREP_ARTEFACTS="$TRACHOMA_AMIS_DIR/fitting-prep/artefacts"
+ENV PATH_TO_FITTING_PREP_INPUTS="$TRACHOMA_AMIS_DIR/fitting-prep/inputs"
+ENV PATH_TO_FITTING_PREP_SCRIPTS="$TRACHOMA_AMIS_DIR/fitting-prep/scripts"
+
+ENV PATH_TO_FITTING_ARTEFACTS="$TRACHOMA_AMIS_DIR/fitting/artefacts"
+ENV PATH_TO_FITTING_INPUTS="$TRACHOMA_AMIS_DIR/fitting/inputs"
+ENV PATH_TO_FITTING_SCRIPTS="$TRACHOMA_AMIS_DIR/fitting/scripts"
+
+ENV PATH_TO_PROJECTIONS_PREP_ARTEFACTS="$TRACHOMA_AMIS_DIR/projections-prep/artefacts"
+ENV PATH_TO_PROJECTIONS_PREP_INPUTS="$TRACHOMA_AMIS_DIR/projections-prep/inputs"
+ENV PATH_TO_PROJECTIONS_PREP_SCRIPTS="$TRACHOMA_AMIS_DIR/projections-prep/scripts"
+
+ENV PATH_TO_PROJECTIONS_ARTEFACTS="$TRACHOMA_AMIS_DIR/projections/artefacts"
+ENV PATH_TO_PROJECTIONS_INPUTS="$TRACHOMA_AMIS_DIR/projections/inputs"
+ENV PATH_TO_PROJECTIONS_SCRIPTS="$TRACHOMA_AMIS_DIR/projections/scripts"
+
 ENV RETICULATE_PYTHON=/opt/conda/bin/python
 ENV RETICULATE_PYTHON_FALLBACK=FALSE
 
-VOLUME [${TRACHOMA_MODEL_DIR}/projections/trachoma]
+VOLUME [${PROJECTIONS_DIR}/artefacts/projections/trachoma]
 ENTRYPOINT [ "python", "run_pipeline.py" ]
