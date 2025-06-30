@@ -8,7 +8,8 @@ kPathToModel <- Sys.getenv("TRACHOMA_MODEL_DIR")
 kPathToPostAmisAnalysis <- file.path(kPathToWorkingDir, "post_AMIS_analysis")
 kPathToAmisOutput <- file.path(kPathToWorkingDir, "AMIS_output")
 kPathToProjectionsPrepArtefacts <- Sys.getenv("PATH_TO_PROJECTIONS_PREP_ARTEFACTS")
-kPathToMaps <- file.path(kPathToProjectionsPrepArtefacts, "Maps")
+kPathToFittingPrepArtefacts <- Sys.getenv("PATH_TO_FITTING_PREP_ARTEFACTS")
+kPathToMaps <- file.path(kPathToFittingPrepArtefacts, "Maps")
 
 set.seed(123)
 

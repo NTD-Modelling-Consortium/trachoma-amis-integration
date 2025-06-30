@@ -8,6 +8,7 @@ kPathToFittingPrepArtefacts <- Sys.getenv("PATH_TO_FITTING_PREP_ARTEFACTS")
 kPathToMaps <- file.path(kPathToFittingPrepArtefacts, "Maps")
 kPathToArtefacts <- Sys.getenv("PATH_TO_FITTING_ARTEFACTS")
 kPathToAmisOutput <- file.path(kPathToArtefacts, "AMIS_output")
+kPathToFittingScripts <- Sys.getenv("PATH_TO_FITTING_SCRIPTS")
 
 option_list <- list(
   make_option(c("-i", "--id"),
@@ -64,7 +65,7 @@ n_timschange <- length(yearschange_index)
 
 # load trachoma model
 reticulate::py_config()
-amis_int_mod <- import("trachoma_amis")
+amis_int_mod <- reticulate::import_from_path("trachoma_amis", path = kPathToFittingScripts)
 
 # Load prevalence map and filter rows for TaskID == id
 load(file.path(kPathToMaps, "trachoma_maps.rds"))

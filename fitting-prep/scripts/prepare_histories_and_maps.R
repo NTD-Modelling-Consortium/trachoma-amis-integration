@@ -1,6 +1,7 @@
 library(dplyr)
 library(tidyr)
 library(optparse)
+library(sf)
 
 kPathToWorkingDir <- Sys.getenv("TRACHOMA_AMIS_DIR")
 kPathToInputs <- Sys.getenv("PATH_TO_FITTING_PREP_INPUTS")

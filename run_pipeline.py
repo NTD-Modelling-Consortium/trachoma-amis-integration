@@ -184,8 +184,11 @@ def do_nearterm_projections(args):
         PATH_TO_PROJECTIONS_PREP_ARTEFACTS = (
             PATH_TO_WORKING_DIR / "projections-prep" / "artefacts"
         )
+        PATH_TO_FITTING_PREP_ARTEFACTS = (
+            PATH_TO_WORKING_DIR / "fitting-prep" / "artefacts"
+        )
         df_ius = pd.read_csv(
-            PATH_TO_PROJECTIONS_PREP_ARTEFACTS / "table_iu_idx_trachoma.csv"
+            PATH_TO_FITTING_PREP_ARTEFACTS / "Maps" / "table_iu_idx_trachoma.csv"
         )
         countries = df_ius[df_ius["TaskID"] == int(args.id)]["country"]
         iu_ids = df_ius[df_ius["TaskID"] == int(args.id)]["IU_ID"]
