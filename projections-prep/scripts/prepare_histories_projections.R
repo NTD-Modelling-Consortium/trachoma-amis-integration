@@ -135,34 +135,3 @@ if (!is.null(opts$id)) {
   cat("Processing all batch IDs\n")
   process_all_batches(id_vec)
 }
-
-# make look up table for country codes
-table_iu_idx <- trachoma_maps[[1]]$data[, c("IU_ID", "TaskID")]
-colnames(table_iu_idx) <- c("IU_ID", "TaskID")
-rownames(table_iu_idx) <- NULL
-
-df <- read_sf(dsn = file.path(kPathToProjectionsPrepInputs, "ESPEN_IU_2021"), layer = "ESPEN_IU_2021") %>%
-  filter(IU_ID %in% table_iu_idx$IU_ID)
-df <- st_drop_geometry(df[, c("IU_ID", "ADMIN0ISO3")])
-head(df)
-table_iu_idx$country <- NA
-for (i in 1:nrow(table_iu_idx)) {
-  IU <- table_iu_idx[i, "IU_ID"]
-  wh <- which(df$IU_ID == IU)[1]
-  country <- df[wh, "ADMIN0ISO3"]
-  table_iu_idx[i, "country"] <- country
-}
-table_iu_idx$IU_ID <- as.character(table_iu_idx$IU_ID)
-table_iu_idx$TaskID <- as.integer(table_iu_idx$TaskID)
-table_iu_idx$country <- as.character(table_iu_idx$country)
-
-# join column that gives last survey year
-last_survey_year <- new_surveys_completed %>%
-  mutate(IU_ID = as.character(IU_ID)) %>%
-  group_by(IU_ID) %>%
-  summarise(stop_importation_year = max(Year))
-
-table_iu_idx <- table_iu_idx %>%
-  left_join(last_survey_year)
-
-write.csv(table_iu_idx, file = file.path(kPathToProjectionsPrepArtefacts, "table_iu_idx_trachoma.csv"), row.names = F)
