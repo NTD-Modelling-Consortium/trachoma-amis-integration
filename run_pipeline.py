@@ -90,6 +90,54 @@ def get_args_for_projections_prep(args):
     return r_args
 
 
+def validate_fitting_prep_args(args):
+    """Validate arguments required for fitting-prep stage."""
+    missing = []
+    if not args.id:
+        missing.append("--id")
+
+    if missing:
+        raise ValueError(f"fitting-prep stage requires: {', '.join(missing)}")
+
+
+def validate_fitting_args(args):
+    """Validate arguments required for fitting stage."""
+    missing = []
+    if not args.id:
+        missing.append("--id")
+
+    if missing:
+        raise ValueError(f"fitting stage requires: {', '.join(missing)}")
+
+
+def validate_projections_prep_args(args):
+    """Validate arguments required for projections-prep stage."""
+    missing = []
+
+    # Either --id or --failed-ids must be provided
+    if not args.id and not args.failed_ids:
+        missing.append("--id or --failed-ids")
+
+    # --folder-id is required for realocate_InputPars_MTP.R script
+    if not args.folder_id:
+        missing.append("--folder-id")
+
+    if missing:
+        raise ValueError(f"projections-prep stage requires: {', '.join(missing)}")
+
+
+def validate_nearterm_projections_args(args):
+    """Validate arguments required for nearterm-projections stage."""
+    missing = []
+    if not args.id:
+        missing.append("--id")
+    if not args.folder_id:
+        missing.append("--folder-id")
+
+    if missing:
+        raise ValueError(f"nearterm-projections stage requires: {', '.join(missing)}")
+
+
 def get_args_for_nearterm_projections(args):
     r_args = []
     if args.folder_id:
@@ -109,6 +157,7 @@ def get_args_for_nearterm_projections(args):
 
 def do_fitting_prep(args):
     """Run the fitting preparation step of the pipeline."""
+    validate_fitting_prep_args(args)
 
     PATH_TO_SCRIPTS = Path(
         os.getenv("PATH_TO_FITTING_PREP_SCRIPTS", "./fitting-prep/scripts")
@@ -123,6 +172,7 @@ def do_fitting_prep(args):
 
 def do_fitting(args):
     """Run the fitting step of the pipeline."""
+    validate_fitting_args(args)
 
     PATH_TO_SCRIPTS = Path(os.getenv("PATH_TO_FITTING_SCRIPTS", "./fitting/scripts"))
 
@@ -133,6 +183,7 @@ def do_fitting(args):
 
 def do_projections_prep(args):
     """Run the projections preparation step of the pipeline."""
+    validate_projections_prep_args(args)
 
     PATH_TO_SCRIPTS = Path(
         os.getenv("PATH_TO_PROJECTIONS_PREP_SCRIPTS", "./projections-prep/scripts")
@@ -181,6 +232,8 @@ def do_projections_prep(args):
 
 def do_nearterm_projections(args):
     """Run the near-term projections (to 2026) stage of the pipeline."""
+    validate_nearterm_projections_args(args)
+
     PATH_TO_PROJECTIONS_SCRIPTS = Path(
         os.getenv("PATH_TO_PROJECTIONS_SCRIPTS", "./projections/scripts")
     )
@@ -244,7 +297,48 @@ STAGE_SEQUENCE_MAP = {
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run the trachoma AMIS pipeline end-to-end"
+        description="Run the trachoma AMIS pipeline end-to-end",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+STAGE-SPECIFIC ARGUMENT REQUIREMENTS:
+
+fitting-prep:
+  Required: --id
+  Optional: None
+  Description: Prepares histories and maps for fitting stage
+
+fitting:
+  Required: --id
+  Optional: --amis-sigma, --amis-n-samples, --amis-target-ess, --num-cores
+  Description: Runs AMIS fitting process
+
+projections-prep:
+  Required: (--id OR --failed-ids) AND --folder-id
+  Optional: --species, --ess-threshold
+  Description: Prepares data for projections stage
+  
+nearterm-projections:
+  Required: --id, --folder-id
+  Optional: --num-cores, --stop-importation
+  Description: Runs near-term projections to 2026
+
+EXAMPLES:
+
+  # Run individual stages
+  %(prog)s --stage fitting-prep --id 1
+  %(prog)s --stage fitting --id 1 --amis-sigma 0.003
+  %(prog)s --stage projections-prep --id 1 --folder-id source-data-20250220
+  %(prog)s --stage nearterm-projections --id 1 --folder-id source-data-20250220
+
+  # Run full pipeline
+  %(prog)s --id 1 --folder-id source-data-20250220
+
+  # Skip fitting-prep (use existing fitting-prep artefacts)
+  %(prog)s --stage skip-fitting-prep --id 1 --folder-id source-data-20250220
+
+  # Process all IDs skipping the failed ones in projections-prep
+  %(prog)s --stage projections-prep --failed-ids 1,2,3 --folder-id source-data-20250220
+        """,
     )
 
     # Required arguments
@@ -258,9 +352,9 @@ def main():
 
     parser.add_argument(
         "--folder-id",
-        required=True,
+        required=False,
         type=str,
-        help="Folder for realocation (e.g., 'source-data-20250220')",
+        help="Folder for realocation (e.g., 'source-data-20250220'). Required for projections-prep and nearterm-projections stages.",
     )
 
     # Optional arguments
@@ -328,10 +422,9 @@ def main():
         choices=[s.value for s in Stage],
         required=False,
         default=Stage.ALL.value,
-        help="Stage of the pipeline to run."
-        f"Options: {', '.join(s.value for s in Stage)} (default: {Stage.ALL.value}) "
-        "If 'all' is specified, it runs all stages in order. "
-        "If 'skip-fitting-prep' is specified, it skips the fitting preparation stage.",
+        help="Stage of the pipeline to run. "
+        f"Options: {', '.join(s.value for s in Stage)} (default: {Stage.ALL.value}). "
+        "Each stage has different argument requirements - see STAGE-SPECIFIC ARGUMENT REQUIREMENTS below for details.",
     )
 
     args = parser.parse_args()
@@ -340,7 +433,7 @@ def main():
         # Validate environment
         validate_environment()
 
-        # Validate arguments
+        # Set up environment if ID is provided
         if args.id:
             print(f"Running pipeline for ID: {args.id}")
             os.environ["SLURM_ARRAY_TASK_ID"] = str(args.id)
@@ -350,8 +443,15 @@ def main():
 
         for stage_function in STAGE_SEQUENCE_MAP[args.stage]:
             print(f"Running stage: {stage_function.__name__}")
-            if not stage_function(args):
-                print(f"Stage {stage_function.__name__} failed.", file=sys.stderr)
+            try:
+                if not stage_function(args):
+                    print(f"Stage {stage_function.__name__} failed.", file=sys.stderr)
+                    return 1
+            except ValueError as e:
+                print(
+                    f"Stage {stage_function.__name__} argument validation failed: {e}",
+                    file=sys.stderr,
+                )
                 return 1
 
         print("Pipeline completed successfully!")
