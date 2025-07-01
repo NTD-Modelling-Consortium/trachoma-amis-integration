@@ -1,66 +1,30 @@
 #!/bin/bash
-# run-docker.sh
+# run_container.sh - Simple Docker wrapper for Trachoma AMIS Pipeline
 
-set -e # Exit on any error
+set -e
 
 IMAGE="trachoma-amis-pipeline:latest"
-CONTAINER_NAME="trachoma-amis-pipeline-run-$(date +%s)"
 
-# Define directory mappings
-HOST_DIRS=(
-    "./fitting-prep/artefacts"
-    "./fitting/artefacts"
-    "./projections-prep/artefacts"
-    "./projections/artefacts"
+# Base mounts for artefacts (always mount fitting, projections-prep, projections)
+MOUNTS=(
+    "-v" "$PWD/fitting/artefacts:/ntdmc/trachoma-amis-integration/fitting/artefacts"
+    "-v" "$PWD/projections-prep/artefacts:/ntdmc/trachoma-amis-integration/projections-prep/artefacts" 
+    "-v" "$PWD/projections/artefacts:/ntdmc/trachoma-amis-integration/projections/artefacts"
 )
 
-CONTAINER_DIRS=(
-    "/ntdmc/trachoma-amis-integration/fitting-prep/artefacts"
-    "/ntdmc/trachoma-amis-integration/fitting/artefacts"
-    "/ntdmc/trachoma-amis-integration/projections-prep/artefacts"
-    "/ntdmc/trachoma-amis-integration/projections/artefacts"
-)
-
-# Cleanup function
-cleanup() {
-    echo "Cleaning up container..."
-    docker rm "$CONTAINER_NAME" >/dev/null 2>&1 || true
-}
-
-# Set trap for cleanup on exit
-trap cleanup EXIT
-
-# Create host directories
-for host_dir in "${HOST_DIRS[@]}"; do
-    mkdir -p "$host_dir"
-done
-
-# Check for help flag
-for arg in "$@"; do
-    if [ "$arg" = "--help" ] || [ "$arg" = "-h" ]; then
-        docker run --name "$CONTAINER_NAME" "$IMAGE" --help
-        exit 0
-    fi
-done
-
-# Run container
-if docker run --name "$CONTAINER_NAME" "$IMAGE" "$@"; then
-    # Copy data to host only if successful
-    echo "Copying results to host..."
-    for i in "${!HOST_DIRS[@]}"; do
-        host_dir="${HOST_DIRS[i]}"
-        container_dir="${CONTAINER_DIRS[i]}"
-        if docker cp "$CONTAINER_NAME:$container_dir/." "$host_dir/" 2>/dev/null; then
-            echo "✓ Copied $container_dir -> $host_dir"
-        else
-            echo "⚠ Warning: Could not copy $container_dir"
-        fi
-    done
-
-    echo "Results available in ./artefacts/"
+# Smart fitting-prep mounting: only mount if host directory is non-empty
+# The container has built-in fitting-prep artefacts from the Docker build process.
+# We only override them if the host directory contains files.
+if [ "$(ls -A fitting-prep/artefacts 2>/dev/null)" ]; then
+    echo "Using host fitting-prep artefacts (host directory is non-empty, will override container's built-in artefacts)"
+    MOUNTS+=("-v" "$PWD/fitting-prep/artefacts:/ntdmc/trachoma-amis-integration/fitting-prep/artefacts")
 else
-    echo "❌ Pipeline failed!"
-    echo "Container logs:"
-    docker logs "$CONTAINER_NAME" | tail -50
-    exit 1
+    echo "Using container's built-in fitting-prep artefacts (host directory is empty, preserving container's pre-built artefacts)"
 fi
+
+# Generate unique container name
+CONTAINER_NAME="trachoma-amis-pipeline-$(date +%s)"
+
+# Run container and cleanup
+docker run --name "$CONTAINER_NAME" "${MOUNTS[@]}" "$IMAGE" "$@"
+docker rm "$CONTAINER_NAME" >/dev/null 2>&1
