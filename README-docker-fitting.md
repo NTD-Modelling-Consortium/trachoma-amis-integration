@@ -1,7 +1,28 @@
 # Trachoma Fitting and Near-Term Projections (Historical Simulations)
 ## Instructions for running in the Cloud using Docker
 
-#### Things to note:
+## Table of Contents
+- [Things to Note](#things-to-note)
+- [Setup](#setup)
+- [Pipeline Overview](#pipeline-overview)
+  - [File Name Pattern Key](#file-name-pattern-key)
+  - [Pipeline Stages](#pipeline-stages)
+    - [1. Fitting Preparation](#1-fitting-preparation---stage-fitting-prep)
+    - [2. Fitting](#2-fitting---stage-fitting)
+    - [3. Projections Preparation](#3-projections-preparation---stage-projections-prep)
+    - [4. Near-term Projections](#4-near-term-projections---stage-nearterm-projections)
+- [Usage](#usage)
+  - [Docker Container Wrapper](#docker-container-wrapper)
+    - [Basic Usage](#basic-usage)
+    - [Artefact Handling](#artefact-handling)
+  - [Direct Pipeline Usage](#direct-pipeline-usage)
+  - [Advanced Docker Usage](#advanced-docker-usage)
+- [Development and Testing](#development-and-testing)
+  - [Speeding up the pipeline](#speeding-up-the-pipeline)
+  - [Failed Batch Handling](#failed-batch-handling)
+- [Notes](#notes)
+
+## Things to Note
 - Past version of projections was missing any MDA from 2022, and fits are missing many surveillance surveys. The latest version of these scripts (in `trachoma-amis-integration`) should be the correct version but they haven't been run
 - The last runs in Feb 2025 were done on the cloud (<https://github.com/NTD-Modelling-Consortium/trachoma-docker-temp>) 
 - May want to consider running with `amis-sigma=0.025` where there are IUs with `ESS < ess-threshold (default=200)` or batches that failed (we have done this for other diseases) using `bash run_container.sh --id=<failed_id> --folder-id="source-data-<yyyymmdd>" --amis-sigma=0.025 [--stop_importation]`.
@@ -267,7 +288,7 @@ For batches that failed to reach ESS threshold:
 
 ## Notes
 
-- **`folder_id` Convention**: Uses format `source-data-<yyyymmdd>` to organize outputs by date
+- `folder-id` Convention: Uses format `source-data-<yyyymmdd>` to organize outputs by date
 - **Environment Variables**: Scripts can use `SLURM_ARRAY_TASK_ID` if `--id` is not provided
 - **File Validation**: Near-term projections validates required input files exist before proceeding
 - **Error Handling**: Each stage validates its arguments and provides clear error messages for missing requirements
