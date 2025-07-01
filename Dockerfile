@@ -71,6 +71,10 @@ ADD projections ${PROJECTIONS_DIR}
 ADD post_AMIS_analysis ${TRACHOMA_AMIS_DIR}/post_AMIS_analysis
 ADD run_pipeline.py ${TRACHOMA_AMIS_DIR}
 
+# Copy the trachoma_amis package and pyproject.toml
+ADD trachoma_amis ${TRACHOMA_AMIS_DIR}/trachoma_amis
+ADD pyproject.toml ${TRACHOMA_AMIS_DIR}
+
 ADD https://storage.googleapis.com/ntd-data-storage/pipeline/trachoma/Maps.tar.gz ${FITTING_PREP_DIR}/inputs/
 ADD https://storage.googleapis.com/ntd-data-storage/pipeline/trachoma/ESPEN_IU_2021.tar.gz ${FITTING_PREP_DIR}/inputs/
 ADD https://storage.googleapis.com/ntd-data-storage/pipeline/trachoma/fitting-prep-artefacts.tar.gz ${FITTING_PREP_DIR}/artefacts/
@@ -90,6 +94,9 @@ WORKDIR ${TRACHOMA_AMIS_DIR}
 
 # Install the trachoma model
 RUN --mount=type=cache,target=/root/.cache/pip cd ${TRACHOMA_MODEL_DIR} && pip install .
+
+# Install the trachoma_amis package
+RUN --mount=type=cache,target=/root/.cache/pip cd ${TRACHOMA_AMIS_DIR} && pip install -e .
 
 ENV TRACHOMA_AMIS_DIR=${TRACHOMA_AMIS_DIR}
 ENV TRACHOMA_MODEL_DIR=${TRACHOMA_MODEL_DIR}

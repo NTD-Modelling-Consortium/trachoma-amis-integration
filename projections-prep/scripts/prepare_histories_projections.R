@@ -127,9 +127,9 @@ opt_parser <- OptionParser(option_list = option_list)
 opts <- parse_args(opt_parser)
 
 
-if (!is.null(opts$id)) {
-  cat(sprintf("Processing single batch ID: %d\n", opts$id))
-  process_batch(opts$id)
+if (!is.null(opts$"id")) {
+  cat(sprintf("Processing single batch ID: %d\n", opts$"id"))
+  process_batch(opts$"id")
 } else {
   id_vec <- 1:max(iu_task_lookup$TaskID)
   cat("Processing all batch IDs\n")

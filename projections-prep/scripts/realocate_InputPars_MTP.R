@@ -6,7 +6,8 @@ library("optparse")
 kPathToWorkingDir <- Sys.getenv("TRACHOMA_AMIS_DIR")
 kPathToModel <- Sys.getenv("TRACHOMA_MODEL_DIR")
 kPathToPostAmisAnalysis <- file.path(kPathToWorkingDir, "post_AMIS_analysis")
-kPathToAmisOutput <- file.path(kPathToWorkingDir, "AMIS_output")
+kPathToFittingArtefacts <- Sys.getenv("PATH_TO_FITTING_ARTEFACTS")
+kPathToAmisOutput <- file.path(kPathToFittingArtefacts, "AMIS_output")
 kPathToProjectionsPrepArtefacts <- Sys.getenv("PATH_TO_PROJECTIONS_PREP_ARTEFACTS")
 kPathToFittingPrepArtefacts <- Sys.getenv("PATH_TO_FITTING_PREP_ARTEFACTS")
 kPathToMaps <- file.path(kPathToFittingPrepArtefacts, "Maps")
@@ -71,12 +72,14 @@ opts <- parse_args(opt_parser)
 
 create_directory_structure <- function(countries, folder_id, species_list) {
   kPathToModelProjections <- file.path(kPathToModel, "projections")
+  cat(sprintf("Creating directory structure in %s\n", kPathToModelProjections))
 
   for (s in species_list) {
     for (country in countries) {
       path_country <- file.path(kPathToModelProjections, s, folder_id, country)
+      cat(sprintf("Creating directory: %s\n", path_country))
       if (!dir.exists(path_country)) {
-        dir.create(path_country, recursive = T)
+        dir.create(path_country, recursive = TRUE)
       }
     }
   }
@@ -183,11 +186,11 @@ folder_id <- opts$"folder-id"
 
 create_directory_structure(countries, folder_id, kSpeciesAll)
 
-if (!is.null(opts$id)) {
+if (!is.null(opts$"id")) {
   # Process single ID
-  cat(sprintf("---Relocation---\nProcessing single batch ID: %d\n", opts$id))
-  load(file.path(kPathToAmisOutput, paste0("amis_output", opts$id, ".Rdata")))
-  process_batch(opts$id, amis_output, df_iu_country, folder_id)
+  cat(sprintf("---Relocation---\nProcessing single batch ID: %d\n", opts$"id"))
+  load(file.path(kPathToAmisOutput, paste0("amis_output", opts$"id", ".Rdata")))
+  process_batch(opts$"id", amis_output, df_iu_country, folder_id)
 } else {
   cat("Processing all batch IDs\n")
   process_all_batches(df_iu_country, failed_ids, folder_id)

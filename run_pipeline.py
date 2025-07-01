@@ -164,7 +164,16 @@ def do_projections_prep(args):
     r_args = get_args_for_projections_prep(args)
     for script in scripts:
         script_args: set = script["args"]
-        command = f"Rscript {script['path']} {' '.join(script_args.intersection(set(r_args)))}"
+        # Filter r_args to only include those that match script_args
+        filtered_args = [
+            arg
+            for arg in r_args
+            if any(arg.startswith(script_arg) for script_arg in script_args)
+        ]
+        print(f"Script arguments: {script_args}")
+        print(f"Provided arguments: {r_args}")
+        print(f"Filtered arguments for {script['path'].name}: {filtered_args}")
+        command = f"Rscript {script['path']} {' '.join(filtered_args)}"
         if not run_command(command, f"Running {script['path'].name}"):
             return False
     return True
@@ -193,16 +202,19 @@ def do_nearterm_projections(args):
         countries = df_ius[df_ius["TaskID"] == int(args.id)]["country"]
         iu_ids = df_ius[df_ius["TaskID"] == int(args.id)]["IU_ID"]
         for country, iu_id in zip(countries, iu_ids):
+            iu_code = f"{country}{str(iu_id).zfill(5)}"
             input_bet_file = (
                 PATH_TO_PROJECTIONS_PREP_ARTEFACTS
                 / "projections"
                 / "trachoma"
                 / args.folder_id
-                / f"{country}/{iu_id}/InputBet_{iu_id}.csv"
+                / f"{country}"
+                / f"{iu_code}"
+                / f"InputBet_{iu_code}.csv"
             )
             if not input_bet_file.exists():
                 print(
-                    f"InputBet file does not exist for {iu_id}. Skipping projections for this ID = {args.id}."
+                    f"InputBet file does not exist for {iu_code}. Skipping projections for this ID = {args.id}."
                 )
                 return False
 
@@ -336,9 +348,6 @@ def main():
             if args.failed_ids:
                 print("Warning: --failed-ids is ignored when --id is specified")
 
-        print(
-            f"args.stage = {args.stage} -> functions = {STAGE_SEQUENCE_MAP[args.stage]}"
-        )
         for stage_function in STAGE_SEQUENCE_MAP[args.stage]:
             print(f"Running stage: {stage_function.__name__}")
             if not stage_function(args):

@@ -65,7 +65,7 @@ n_timschange <- length(yearschange_index)
 
 # load trachoma model
 reticulate::py_config()
-amis_int_mod <- reticulate::import_from_path("trachoma_amis", path = kPathToFittingScripts)
+amis_int_mod <- reticulate::import_from_path("amis_integration", path = kPathToFittingScripts)
 
 # Load prevalence map and filter rows for TaskID == id
 load(file.path(kPathToMaps, "trachoma_maps.rds"))

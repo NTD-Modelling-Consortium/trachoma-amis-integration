@@ -127,14 +127,14 @@ load(file.path(kPathToMaps, "iu_task_lookup.Rdata"))
 
 kPathToInputParsMTP <- file.path(kPathToPostAmisAnalysis, paste0("InputPars_MTP_", opts$species))
 create_directory_structure(species = opts$species)
-if (!is.null(opts$id)) {
+if (!is.null(opts$"id")) {
   # Process single ID
-  load(file.path(kPathToAmisOutput, paste0("amis_output", opts$id, ".Rdata")))
-  sampled_params_all <- process_batch(opts$id, amis_output)
+  load(file.path(kPathToAmisOutput, paste0("amis_output", opts$"id", ".Rdata")))
+  sampled_params_all <- process_batch(opts$"id", amis_output)
   if (!is.null(sampled_params_all)) {
-    output_file <- paste0("InputPars_MTP_", opts$id, ".rds")
+    output_file <- paste0("InputPars_MTP_", opts$"id", ".rds")
     save(sampled_params_all, file = file.path(kPathToInputParsMTP, output_file))
-    cat(sprintf("Saved posterior parameter samples for single batch [%d] to: %s\n", opts$id, output_file))
+    cat(sprintf("Saved posterior parameter samples for single batch [%d] to: %s\n", opts$"id", output_file))
   }
 } else {
   # Process failed IDs if provided
