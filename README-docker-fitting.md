@@ -44,64 +44,75 @@ The Trachoma AMIS pipeline consists of four sequential stages:
 graph TD
     subgraph "External Inputs"
         A["📁 ESPEN_IU_2021.tar.gz<br/>📁 Maps.tar.gz<br/>📁 fitting-prep-artefacts.tar.gz<br/>(Downloaded during Docker build)"]
+        A1["📄 Maps/<br/>trachoma_IU_Match_PB.csv"]
+        A2["📄 Maps/<br/>trachomaComb_IU.csv"]
     end
     
     subgraph "Stage 1: fitting-prep"
         D["prepare_histories_and_maps.R<br/>Input: --id={batch_id}"]
-        D --> E1["📄 Maps/table_iu_idx_trachoma.csv"]
-        D --> E2["📄 Maps/trachoma_maps.rds"]
-        D --> E3["📄 Maps/trachoma_data.Rdata"]
-        D --> E4["📄 endgame_inputs/IUs_MTP_{id}.csv"]
-        D --> E5["📄 endgame_inputs/InputMDA_MTP_{id}.csv"]
+        D2["prepare_histories_projections.R<br/>Input: --id={batch_id}"]
+        D --> E1["📄 Maps/<br/>table_iu_idx_trachoma.csv"]
+        D --> E2["📄 Maps/<br/>trachoma_maps.rds"]
+        D --> E3["📄 Maps/<br/>trachoma_data.Rdata"]
+        D --> E4["📄 Maps/<br/>trachoma_espen_data.Rdata"]
+        D --> E5["📄 Maps/<br/>iu_task_lookup.Rdata"]
+        D --> E6["📄 Maps/<br/>trachoma_map_years.rds"]
+        D --> E7["📄 endgame_inputs/<br/>IUs_MTP_{id}.csv"]
+        D --> E8["📄 endgame_inputs/<br/>InputMDA_MTP_{id}.csv"]
+        D2 --> E9["📄 mda_history_trachoma.csv"]
+        D2 --> E10["📄 endgame_inputs/<br/>InputMDA_MTP_<br/>projections_{iu}.csv<br/>(per IU)"]
     end
     
     subgraph "Stage 2: fitting"
         F["trachoma_fitting.R<br/>Input: --id={batch_id}"]
-        F --> G1["📄 trajectories/trajectories_{id}.Rdata"]
-        F --> G2["📄 infections/infections{id}.Rdata"]
-        F --> G3["📄 AMIS_output/amis_output{id}.Rdata"]
+        F --> G1["📄 trajectories/<br/>trajectories_{id}.Rdata"]
+        F --> G2["📄 infections/<br/>infections{id}.Rdata"]
+        F --> G3["📄 AMIS_output/<br/>amis_output{id}.Rdata"]
         F --> G4["📄 ESS_NOT_REACHED.txt"]
         F --> G5["📄 summary.csv"]
     end
     
     subgraph "Stage 3: projections-prep"
-        I["prepare_histories_projections.R<br/>Input: --id={batch_id}"]
         J["preprocess_for_projections.R<br/>Input: --id OR --failed-ids"]
         K["realocate_InputPars_MTP.R<br/>Input: --folder-id={folder_id}"]
-        I --> L1["📄 mda_history_trachoma.csv"]
-        I --> L2["📄 endgame_inputs/InputMDA_MTP_projections_{iu}.csv"]
         J --> M1["📄 InputPars_MTP_{id}.rds"]
         J --> M2["📄 InputPars_MTP_{iu}.csv"]
-        K --> N["📄 projections/trachoma/{folder_id}/<br/>{country}/{country}{iu}/<br/>InputBet_{country}{iu}.csv"]
+        J --> M3["📄 InputPars_MTP_allIUs.rds"]
+        K --> N["📄 projections/trachoma/<br/>{folder_id}/{country}/<br/>{country}{iu}/<br/>InputBet_{country}{iu}.csv"]
     end
     
     subgraph "Stage 4: nearterm-projections"
         O["RunProjectionsTo2026.py<br/>Input: --id={batch_id}<br/>--folder-id={folder_id}"]
-        O --> P["📄 Trachoma_{country}{iu}.p"]
-        O --> Q["📄 PrevDataset_Trachoma_{country}{iu}.csv"]
+        O --> P["📄 Trachoma_<br/>{country}{iu}.p"]
+        O --> Q["📄 PrevDataset_<br/>Trachoma_<br/>{country}{iu}.csv"]
     end
     
     A --> D
-    E1 --> F
+    A1 --> D
+    A2 --> D
     E2 --> F
-    E3 --> F
-    E4 --> F
-    E5 --> F
-    G1 --> I
-    G2 --> I
+    E6 --> F
+    E2 --> D2
+    E3 --> D2
+    E5 --> D2
+    E2 --> J
+    E6 --> J
+    E5 --> J
     G3 --> J
-    E1 --> J
-    L1 --> K
-    L2 --> K
-    M1 --> K
+    E5 --> K
+    E1 --> K
+    G3 --> K
     M2 --> K
     N --> O
     E1 --> O
+    E10 --> O
     
     style A fill:#f9f9f9
+    style A1 fill:#f9f9f9
+    style A2 fill:#f9f9f9
     style D fill:#e1f5fe
+    style D2 fill:#e1f5fe
     style F fill:#fff3e0
-    style I fill:#f3e5f5
     style J fill:#f3e5f5
     style K fill:#f3e5f5
     style O fill:#e8f5e8
@@ -117,7 +128,9 @@ graph TD
 ### Pipeline Stages
 
 #### 1. **Fitting Preparation** (`--stage=fitting-prep`)
-**Script:** `prepare_histories_and_maps.R` - produces maps and histories from 1996-2021.
+**Scripts:**
+- `prepare_histories_and_maps.R` - produces maps and histories from 1996-2021
+- `prepare_histories_projections.R` - produces MDA histories from 1996-2025 for projections
 
 **Required Arguments:** `--id`
 
@@ -134,6 +147,7 @@ graph TD
 - **Endgame inputs directory:**
   - `IUs_MTP_{id}.csv` - IU lists per batch
   - `InputMDA_MTP_{id}.csv` - MDA coverage data per batch
+  - `InputMDA_MTP_projections_{iu}.csv` - MDA coverage per IU for projections (1996-2025)
 
 #### 2. **Fitting** (`--stage=fitting`)
 **Script:** `trachoma_fitting.R` - runs AMIS fitting algorithm for each batch.
@@ -152,7 +166,6 @@ graph TD
 
 #### 3. **Projections Preparation** (`--stage=projections-prep`)
 **Scripts:**
-- `prepare_histories_projections.R`: produces the histories from 1996-2025.
 - `preprocess_for_projections.R`: creates the `amis-n-samples (default=200)` parameter vectors (simulated from the fitted models) used in projections.
 - `realocate_InputPars_MTP.R`: reorganizes the files with the `amis-n-samples (default=200)` samples used in projections, so that they are organized in the expected file hierarchy in the cloud.
 
@@ -164,7 +177,6 @@ graph TD
 **Generated Files:**
 - `mda_history_trachoma.csv` - MDA history data
 - `trachoma/data/coverage/endgame_inputs/IUs_MTP_{id}.csv` - IU lists per batch
-- `trachoma/data/coverage/endgame_inputs/InputMDA_MTP_projections_{iu}.csv` - MDA coverage per IU
 - `post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_{iu}.csv` - Parameters per IU
 - `post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_{id}.rds` - Parameters per batch
 - `post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_allIUs.rds` - All IU parameters

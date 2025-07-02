@@ -156,7 +156,7 @@ def run_iu_projections(
 
     # Set up MDA filepath
     mda_filepath = (
-        PATH_TO_PROJECTIONS_PREP_ARTEFACTS
+        PATH_TO_FITTING_PREP_ARTEFACTS
         / projection_config["species"]
         / "data"
         / "coverage"

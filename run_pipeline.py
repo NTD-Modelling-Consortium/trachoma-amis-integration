@@ -164,10 +164,19 @@ def do_fitting_prep(args):
     )
 
     r_args = get_args_for_fitting_prep(args)
+    
+    # Run prepare_histories_and_maps.R
     command = (
         f"Rscript {PATH_TO_SCRIPTS}/prepare_histories_and_maps.R {' '.join(r_args)}"
     )
-    return run_command(command, "Preparing histories and maps")
+    if not run_command(command, "Preparing histories and maps"):
+        return False
+    
+    # Run prepare_histories_projections.R
+    command = (
+        f"Rscript {PATH_TO_SCRIPTS}/prepare_histories_projections.R {' '.join(r_args)}"
+    )
+    return run_command(command, "Preparing histories for projections")
 
 
 def do_fitting(args):
@@ -190,10 +199,6 @@ def do_projections_prep(args):
     )
 
     scripts = [
-        {
-            "path": PATH_TO_SCRIPTS / "prepare_histories_projections.R",
-            "args": set(["--id"]),
-        },
         {
             "path": PATH_TO_SCRIPTS / "preprocess_for_projections.R",
             "args": set(["--id", "--ess-threshold", "--failed-ids", "--species"]),

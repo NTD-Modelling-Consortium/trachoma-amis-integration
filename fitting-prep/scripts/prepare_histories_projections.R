@@ -7,8 +7,6 @@ library(optparse)
 kPathToWorkingDir <- Sys.getenv("TRACHOMA_AMIS_DIR")
 kPathToFittingPrepArtefacts <- Sys.getenv("PATH_TO_FITTING_PREP_ARTEFACTS")
 kPathToMaps <- file.path(kPathToFittingPrepArtefacts, "Maps")
-kPathToProjectionsPrepInputs <- file.path(Sys.getenv("PATH_TO_PROJECTIONS_PREP_INPUTS"))
-kPathToProjectionsPrepArtefacts <- Sys.getenv("PATH_TO_PROJECTIONS_PREP_ARTEFACTS")
 
 load(file.path(kPathToMaps, "trachoma_maps.rds"))
 load(file.path(kPathToMaps, "trachoma_data.Rdata"))
@@ -55,7 +53,7 @@ projections_histories <- trachoma_data_joined %>%
   filter(IU_ID %in% new_surveys_completed$IU_ID) %>%
   pivot_wider(names_from = Year, values_from = PC_in_group)
 
-write.csv(trachoma_data_joined, file = file.path(kPathToProjectionsPrepArtefacts, "mda_history_trachoma.csv"))
+write.csv(trachoma_data_joined, file = file.path(kPathToFittingPrepArtefacts, "mda_history_trachoma.csv"))
 
 
 # save MDA inputs for python model
@@ -80,7 +78,7 @@ coverage_wide <- projections_histories %>%
 
 # export histories files
 kPathToEndgameInputs <- file.path(
-  kPathToProjectionsPrepArtefacts,
+  kPathToFittingPrepArtefacts,
   "trachoma", "data", "coverage", "endgame_inputs"
 )
 if (!dir.exists(kPathToEndgameInputs)) {
