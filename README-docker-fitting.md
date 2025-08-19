@@ -175,8 +175,6 @@ graph TD
 **Output Location:** `projections-prep/artefacts/`
 
 **Generated Files:**
-- `mda_history_trachoma.csv` - MDA history data
-- `trachoma/data/coverage/endgame_inputs/IUs_MTP_{id}.csv` - IU lists per batch
 - `post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_{iu}.csv` - Parameters per IU
 - `post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_{id}.rds` - Parameters per batch
 - `post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_allIUs.rds` - All IU parameters

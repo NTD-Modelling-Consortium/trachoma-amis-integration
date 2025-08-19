@@ -85,6 +85,40 @@ create_directory_structure <- function(countries, folder_id, species_list) {
   }
 }
 
+#  Apply gradual beta changes across the entire dataset
+make_beta_decrease_gradual_over_full_dataset <- function(dataset, n_years_reduction = 10) {
+  beta_columns <- grep("beta", colnames(dataset))
+
+  dataset[, beta_columns] <- t(apply(dataset[, beta_columns], 1, function(row) {
+    gradual_beta_transitions(row, n_years_reduction)
+  }))
+
+  return(dataset)
+}
+
+# Function to gradual transitions in a single beta series
+gradual_beta_transitions <- function(data, n_years_reduction = 10) {
+  change_points <- which(diff(data) != 0)
+
+  for (i in seq_along(change_points)) {
+    idx <- change_points[i]
+
+    # Determine which indices will be included in the smoothing pprocess
+    start_idx <- if (i > 1) {
+      max(change_points[i - 1] + 1, idx - n_years_reduction + 1)
+    } else {
+      max(1, idx - n_years_reduction + 1)
+    }
+    end_idx <- idx + 1
+
+    # Apply linear interpolation over the chosen indices
+    indices <- start_idx:end_idx
+    data[indices] <- seq(data[idx], data[idx + 1], length.out = length(indices))
+  }
+
+  return(data)
+}
+
 process_all_batches <- function(df_iu_country, failed_ids, folder_id) {
   # loading 'iu_task_lookup' (batches-IUs look up table for the fitting)
   load(file.path(kPathToMaps, "iu_task_lookup.Rdata"))
@@ -166,6 +200,8 @@ process_batch <- function(id, amis_output_data, df_iu_country, folder_id, specie
         n_reps <- (2026 - 1926) - 1
         sampled_params_full[, 2:(2026 - 1926)] <- matrix(rep(sampled_params[, 2], n_reps), ncol = n_reps)
       }
+
+      make_beta_decrease_gradual_over_full_dataset(sampled_params)
 
       file_name_new <- file.path(path_iu, paste0("InputBet_", country, iu0, ".csv"))
       write.csv(sampled_params_full, file = file_name_new, row.names = F)

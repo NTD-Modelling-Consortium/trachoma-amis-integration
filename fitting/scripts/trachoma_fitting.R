@@ -190,6 +190,40 @@ dprior <- function(x, log) {
   return(d)
 }
 
+#  Apply gradual beta changes across the entire dataset
+make_beta_decrease_gradual_over_full_dataset <- function(dataset, n_years_reduction = 10) {
+  beta_columns <- grep("beta", colnames(dataset))
+
+  dataset[, beta_columns] <- t(apply(dataset[, beta_columns], 1, function(row) {
+    gradual_beta_transitions(row, n_years_reduction)
+  }))
+
+  return(dataset)
+}
+
+# Function to gradual transitions in a single beta series
+gradual_beta_transitions <- function(data, n_years_reduction = 10) {
+  change_points <- which(diff(data) != 0)
+
+  for (i in seq_along(change_points)) {
+    idx <- change_points[i]
+
+    # Determine which indices will be included in the smoothing pprocess
+    start_idx <- if (i > 1) {
+      max(change_points[i - 1] + 1, idx - n_years_reduction + 1)
+    } else {
+      max(1, idx - n_years_reduction + 1)
+    }
+    end_idx <- idx + 1
+
+    # Apply linear interpolation over the chosen indices
+    indices <- start_idx:end_idx
+    data[indices] <- seq(data[idx], data[idx + 1], length.out = length(indices))
+  }
+
+  return(data)
+}
+
 prior <- list(rprior = rprior, dprior = dprior)
 
 # Algorithm parameters
@@ -273,6 +307,7 @@ transmission_model <- function(seeds, params, n_tims) {
   }
 
   # run model
+  make_beta_decrease_gradual_over_full_dataset(params_full)
   output <- model_func(seeds, params_full, n_tims)
 
   # save simulated trajectories
