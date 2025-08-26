@@ -201,7 +201,7 @@ process_batch <- function(id, amis_output_data, df_iu_country, folder_id, specie
         sampled_params_full[, 2:(2026 - 1926)] <- matrix(rep(sampled_params[, 2], n_reps), ncol = n_reps)
       }
 
-      make_beta_decrease_gradual_over_full_dataset(sampled_params)
+      sampled_params_full = make_beta_decrease_gradual_over_full_dataset(sampled_params_full)
 
       file_name_new <- file.path(path_iu, paste0("InputBet_", country, iu0, ".csv"))
       write.csv(sampled_params_full, file = file_name_new, row.names = F)
