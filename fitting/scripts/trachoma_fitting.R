@@ -307,7 +307,7 @@ transmission_model <- function(seeds, params, n_tims) {
   }
 
   # run model
-  make_beta_decrease_gradual_over_full_dataset(params_full)
+  params_full = make_beta_decrease_gradual_over_full_dataset(params_full)
   output <- model_func(seeds, params_full, n_tims)
 
   # save simulated trajectories
