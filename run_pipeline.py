@@ -79,7 +79,7 @@ def get_args_for_projections_prep(args):
         r_args.append(f"--failed-ids={args.failed_ids}")
 
     if args.folder_id:
-        r_args.append(f"--folder-id='{args.folder_id}'")
+        r_args.append(f"--folder-id={args.folder_id}")
 
     if args.species:
         r_args.append(f"--species={args.species}")
@@ -141,7 +141,7 @@ def validate_nearterm_projections_args(args):
 def get_args_for_nearterm_projections(args):
     r_args = []
     if args.folder_id:
-        r_args.append(f"--folder-id='{args.folder_id}'")
+        r_args.append(f"--folder-id={args.folder_id}")
 
     if args.id:
         r_args.append(f"--id={args.id}")

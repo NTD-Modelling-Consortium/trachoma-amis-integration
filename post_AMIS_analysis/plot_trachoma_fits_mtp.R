@@ -11,18 +11,43 @@ library(AMISforInfectiousDiseases)
 library(sf)
 library(viridis)
 
-setwd("~/Documents/trachoma-endgame")
+plot_workdir <- Sys.getenv("TRACHOMA_PLOT_WORKDIR", unset = getwd())
+setwd(plot_workdir)
 load("Maps/trachoma_maps.rds")
 load("Maps/trachoma_map_years.rds")
 country_iu_lookup = read.csv("Maps/table_iu_idx_trachoma.csv")
 
-failed_ids = c(55,69,113,114,123,150,153,170,180,189,276,296,369,375,376,379,380,381,495,503,510,528,530,532,533,541)
+default_failed_ids = c(55,69,113,114,123,150,153,170,180,189,276,296,369,375,376,379,380,381,495,503,510,528,530,532,533,541)
+failed_ids_env = Sys.getenv("FAILED_IDS", unset = "")
+if (nzchar(failed_ids_env)) {
+  failed_ids = as.integer(strsplit(gsub("[, ]+", ",", failed_ids_env), ",")[[1]])
+} else {
+  failed_ids = default_failed_ids
+}
+inputbet_dir = Sys.getenv("TRACHOMA_INPUTBET_DIR", unset = "post_AMIS_analysis/trachoma-source-data-20250225-espen-input-bet-csv")
+all_batch_ids = sort(unique(country_iu_lookup$TaskID))
 ctd_ids = c()
-id_vec = setdiff(1:564,c(failed_ids))
+plot_batch_ids_env = Sys.getenv("PLOT_BATCH_IDS", unset = "")
+if (nzchar(plot_batch_ids_env)) {
+  id_vec = as.integer(strsplit(gsub("[, ]+", ",", plot_batch_ids_env), ",")[[1]])
+  failed_ids = integer(0)
+} else {
+  id_vec = setdiff(all_batch_ids, failed_ids)
+}
 
 n_samples = 1000 
 saveFigures = T 
 savePars = T
+
+wrap_plot_panels <- function(plots, panel_ncols = 4) {
+  plots <- plots[!vapply(plots, is.null, logical(1))]
+  if (length(plots) == 0) {
+    return(grid::textGrob("No plots"))
+  }
+  ncols <- min(panel_ncols, length(plots))
+  nrows <- ceiling(length(plots) / ncols)
+  patchwork::wrap_plots(plots, nrow = nrows, ncol = ncols)
+}
 
 # define prior hyperparameters and boundaries
 beta_rate = 5
@@ -80,7 +105,7 @@ if(savePars==T){
       
       country_code = country_iu_lookup$country[which(country_iu_lookup$IU_ID == iu)]
       iu0 <- sprintf("%05d", as.integer(iu))
-      params_to_use <- read.csv(paste0("post_AMIS_analysis/trachoma-source-data-20250225-espen-input-bet-csv/InputBet_",country_code,iu0,".csv"))
+      params_to_use <- read.csv(paste0(inputbet_dir, "/InputBet_",country_code,iu0,".csv"))
       sampled_params = data.frame(IU_ID=iu,
                                   seed=params_to_use$seed,
                                   amis_output$param[params_to_use$seed,],
@@ -208,12 +233,12 @@ if (saveFigures==T){
     }
     
     png(paste0("post_AMIS_analysis/plots/trajectories_prior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-    print(patchwork::wrap_plots(trajectories_plots,nrow = panel_nrows, ncol = panel_ncols))
+    print(wrap_plot_panels(trajectories_plots, panel_ncols = panel_ncols))
     dev.off()
     
   
     png(paste0("post_AMIS_analysis/plots/infections_prior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-    print(patchwork::wrap_plots(infections_plots,nrow = panel_nrows, ncol = panel_ncols))
+    print(wrap_plot_panels(infections_plots, panel_ncols = panel_ncols))
     dev.off()
  
     #### Sample draws from the posterior
@@ -243,7 +268,7 @@ if (saveFigures==T){
         country_code = country_iu_lookup$country[which(country_iu_lookup$IU_ID == iu)]
         iu0 <- sprintf("%05d", as.integer(iu))
         
-        sampled_params_iu <- read.csv(paste0("post_AMIS_analysis/trachoma-source-data-20250225-espen-input-bet-csv/InputBet_",country_code,iu0,".csv"))
+        sampled_params_iu <- read.csv(paste0(inputbet_dir, "/InputBet_",country_code,iu0,".csv"))
 
         #sampled_params_iu = read.csv(paste0("post_AMIS_analysis/InputPars_MTP_trachoma/InputPars_MTP_",iu,".csv"))
         
@@ -336,39 +361,46 @@ if (saveFigures==T){
       }
       
       png(paste0("post_AMIS_analysis/plots/trajectories_posterior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-      print(patchwork::wrap_plots(trajectories_plots,nrow = panel_nrows, ncol = panel_ncols))
+      print(wrap_plot_panels(trajectories_plots, panel_ncols = panel_ncols))
       dev.off()
       
       png(paste0("post_AMIS_analysis/plots/infections_posterior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-      print(patchwork::wrap_plots(infections_plots,nrow = panel_nrows, ncol = panel_ncols))
+      print(wrap_plot_panels(infections_plots, panel_ncols = panel_ncols))
       dev.off()
       
       png(paste0("post_AMIS_analysis/plots/betainit_posterior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-      print(patchwork::wrap_plots(parameters_betainit_plots,nrow = panel_nrows, ncol = panel_ncols))
+      print(wrap_plot_panels(parameters_betainit_plots, panel_ncols = panel_ncols))
       dev.off()
       
       png(paste0("post_AMIS_analysis/plots/beta2000_posterior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-      print(patchwork::wrap_plots(parameters_beta2000_plots,nrow = panel_nrows, ncol = panel_ncols))
+      print(wrap_plot_panels(parameters_beta2000_plots, panel_ncols = panel_ncols))
       dev.off()
       
       png(paste0("post_AMIS_analysis/plots/beta2010_posterior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-      print(patchwork::wrap_plots(parameters_beta2010_plots,nrow = panel_nrows, ncol = panel_ncols))
+      print(wrap_plot_panels(parameters_beta2010_plots, panel_ncols = panel_ncols))
       dev.off()
       
       png(paste0("post_AMIS_analysis/plots/beta2020_posterior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-      print(patchwork::wrap_plots(parameters_beta2020_plots,nrow = panel_nrows, ncol = panel_ncols))
+      print(wrap_plot_panels(parameters_beta2020_plots, panel_ncols = panel_ncols))
       dev.off()
       
       png(paste0("post_AMIS_analysis/plots/effcov_posterior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-      print(patchwork::wrap_plots(parameters_effcov_plots,nrow = panel_nrows, ncol = panel_ncols))
+      print(wrap_plot_panels(parameters_effcov_plots, panel_ncols = panel_ncols))
       dev.off()
       
       png(paste0("post_AMIS_analysis/plots/k_posterior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-      print(patchwork::wrap_plots(parameters_k_plots,nrow = panel_nrows, ncol = panel_ncols))
+      print(wrap_plot_panels(parameters_k_plots, panel_ncols = panel_ncols))
       dev.off()
       
     }
   } 
+}
+
+# Subset/smoke runs only need per-batch plot PNGs; skip aggregate map sections
+# that require ESPEN shapefiles and full-run artefacts not staged in the wrapper.
+if (nzchar(plot_batch_ids_env)) {
+  message("PLOT_BATCH_IDS set: skipping aggregate map/beta sections.")
+  quit(save = "no", status = 0)
 }
 
 # plot initial trajectories for failed batches
@@ -467,12 +499,12 @@ if (saveFigures==T){
     }
     
     png(paste0("post_AMIS_analysis/plots/failed_trajectories_prior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-    print(patchwork::wrap_plots(trajectories_plots,nrow = panel_nrows, ncol = panel_ncols))
+    print(wrap_plot_panels(trajectories_plots, panel_ncols = panel_ncols))
     dev.off()
     
     
     png(paste0("post_AMIS_analysis/plots/failed_infections_prior_",id,".png"),width=10,height=panel_nrows*2.5,units="in",res=900)
-    print(patchwork::wrap_plots(infections_plots,nrow = panel_nrows, ncol = panel_ncols))
+    print(wrap_plot_panels(infections_plots, panel_ncols = panel_ncols))
     dev.off()
   } 
 }
@@ -576,7 +608,7 @@ if (saveFigures==T){
         iu0 <- sprintf("%05d", as.integer(iu))
         iu_order[list_ind,] = c(list_ind,paste0(country_code,iu0))
         
-        sampled_params_iu <- read.csv(paste0("post_AMIS_analysis/trachoma-source-data-20250225-espen-input-bet-csv/InputBet_",country_code,iu0,".csv"))
+        sampled_params_iu <- read.csv(paste0(inputbet_dir, "/InputBet_",country_code,iu0,".csv"))
         
         # prep beta data for plot
         beta_vals = sampled_params_iu %>%
@@ -704,28 +736,28 @@ if (saveFigures==T){
     infections_plots_countries = infections_plots[country_inds]
 
     pdf(paste0("post_AMIS_analysis/plots/trajectories_posterior_",country,".pdf"),width=12,height=(ceiling(length(country_inds)/panel_ncols)*2))
-    print(patchwork::wrap_plots(trajectories_plots_countries,nrow = ceiling(length(country_inds)/panel_ncols), ncol = panel_ncols))
+    print(wrap_plot_panels(trajectories_plots_countries, panel_ncols = panel_ncols))
     dev.off()
 
     pdf(paste0("post_AMIS_analysis/plots/infections_posterior_",country,".pdf"),width=10,height=(ceiling(length(country_inds)/panel_ncols)*2.5))
-    print(patchwork::wrap_plots(infections_plots_countries,nrow = ceiling(length(country_inds)/panel_ncols), ncol = panel_ncols))
+    print(wrap_plot_panels(infections_plots_countries, panel_ncols = panel_ncols))
     dev.off()
   }
   
   pdf(paste0("post_AMIS_analysis/plots/beta_baseline_first_allIUs.pdf"),width=12,height=(ceiling(L/panel_ncols)*2))
-  print(patchwork::wrap_plots(beta_baseline_first,nrow = ceiling(L/panel_ncols), ncol = panel_ncols))
+  print(wrap_plot_panels(beta_baseline_first, panel_ncols = panel_ncols))
   dev.off()
 
   pdf(paste0("post_AMIS_analysis/plots/beta_baseline_second_allIUs.pdf"),width=12,height=(ceiling(L/panel_ncols)*2))
-  print(patchwork::wrap_plots(beta_baseline_second,nrow = ceiling(L/panel_ncols), ncol = panel_ncols))
+  print(wrap_plot_panels(beta_baseline_second, panel_ncols = panel_ncols))
   dev.off()
 
   pdf(paste0("post_AMIS_analysis/plots/beta_baseline_third_allIUs.pdf"),width=12,height=(ceiling(L/panel_ncols)*2))
-  print(patchwork::wrap_plots(beta_baseline_third,nrow = ceiling(L/panel_ncols), ncol = panel_ncols))
+  print(wrap_plot_panels(beta_baseline_third, panel_ncols = panel_ncols))
   dev.off()
 
   pdf(paste0("post_AMIS_analysis/plots/betadrop_coverage_allIUs.pdf"),width=12,height=(ceiling(L/panel_ncols)*2))
-  print(patchwork::wrap_plots(betadrop_coverage,nrow = ceiling(L/panel_ncols), ncol = panel_ncols))
+  print(wrap_plot_panels(betadrop_coverage, panel_ncols = panel_ncols))
   dev.off()
   
   # # just plot those that failed follow up surveys
@@ -737,23 +769,23 @@ if (saveFigures==T){
   # iu_impact_failures_inds = which(iu_order$IU_ID %in% ius_that_failed_impact_surveys$IU_ID)
   # 
   # pdf(paste0("post_AMIS_analysis/plots/failed_surveys_impact_trajectories.pdf"),width=12,height=(ceiling(length(iu_impact_failures_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(trajectories_plots[iu_impact_failures_inds],nrow = ceiling(length(iu_impact_failures_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(trajectories_plots[iu_impact_failures_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/failed_surveys_impact_beta_baseline_first.pdf"),width=12,height=(ceiling(length(iu_impact_failures_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(beta_baseline_first[iu_impact_failures_inds],nrow = ceiling(length(iu_impact_failures_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(beta_baseline_first[iu_impact_failures_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/failed_surveys_impact_beta_baseline_second.pdf"),width=12,height=(ceiling(length(iu_impact_failures_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(beta_baseline_second[iu_impact_failures_inds],nrow = ceiling(length(iu_impact_failures_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(beta_baseline_second[iu_impact_failures_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/failed_surveys_impact_beta_baseline_third.pdf"),width=12,height=(ceiling(length(iu_impact_failures_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(beta_baseline_third[iu_impact_failures_inds],nrow = ceiling(length(iu_impact_failures_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(beta_baseline_third[iu_impact_failures_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/failed_surveys_impact_betadrop_coverage.pdf"),width=12,height=(ceiling(length(iu_impact_failures_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(betadrop_coverage[iu_impact_failures_inds],nrow = ceiling(length(iu_impact_failures_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(betadrop_coverage[iu_impact_failures_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # # surveillance survey failures
@@ -762,23 +794,23 @@ if (saveFigures==T){
   # iu_surveillance_failures_inds = which(iu_order$IU_ID %in% ius_that_failed_surveillance_surveys$IU_ID)
   # 
   # pdf(paste0("post_AMIS_analysis/plots/failed_surveys_surveillance_trajectories.pdf"),width=12,height=(ceiling(length(iu_surveillance_failures_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(trajectories_plots[iu_surveillance_failures_inds],nrow = ceiling(length(iu_surveillance_failures_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(trajectories_plots[iu_surveillance_failures_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/failed_surveys_surveillance_beta_baseline_first.pdf"),width=12,height=(ceiling(length(iu_surveillance_failures_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(beta_baseline_first[iu_surveillance_failures_inds],nrow = ceiling(length(iu_surveillance_failures_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(beta_baseline_first[iu_surveillance_failures_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/failed_surveys_surveillance_beta_baseline_second.pdf"),width=12,height=(ceiling(length(iu_surveillance_failures_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(beta_baseline_second[iu_surveillance_failures_inds],nrow = ceiling(length(iu_surveillance_failures_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(beta_baseline_second[iu_surveillance_failures_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/failed_surveys_surveillance_beta_baseline_third.pdf"),width=12,height=(ceiling(length(iu_surveillance_failures_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(beta_baseline_third[iu_surveillance_failures_inds],nrow = ceiling(length(iu_surveillance_failures_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(beta_baseline_third[iu_surveillance_failures_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/failed_surveys_surveillance_betadrop_coverage.pdf"),width=12,height=(ceiling(length(iu_surveillance_failures_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(betadrop_coverage[iu_surveillance_failures_inds],nrow = ceiling(length(iu_surveillance_failures_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(betadrop_coverage[iu_surveillance_failures_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # 
@@ -788,23 +820,23 @@ if (saveFigures==T){
   # iu_rebounds_inds = which(iu_order$IU_ID %in% ius_that_rebounds$IU_ID)
   # 
   # pdf(paste0("post_AMIS_analysis/plots/rebounds_trajectories.pdf"),width=12,height=(ceiling(length(iu_rebounds_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(trajectories_plots[iu_rebounds_inds],nrow = ceiling(length(iu_rebounds_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(trajectories_plots[iu_rebounds_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/rebounds_beta_baseline_first.pdf"),width=12,height=(ceiling(length(iu_rebounds_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(beta_baseline_first[iu_rebounds_inds],nrow = ceiling(length(iu_rebounds_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(beta_baseline_first[iu_rebounds_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/rebounds_beta_baseline_second.pdf"),width=12,height=(ceiling(length(iu_rebounds_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(beta_baseline_second[iu_rebounds_inds],nrow = ceiling(length(iu_rebounds_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(beta_baseline_second[iu_rebounds_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/rebounds_beta_baseline_third.pdf"),width=12,height=(ceiling(length(iu_rebounds_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(beta_baseline_third[iu_rebounds_inds],nrow = ceiling(length(iu_rebounds_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(beta_baseline_third[iu_rebounds_inds], panel_ncols = panel_ncols))
   # dev.off()
   # 
   # pdf(paste0("post_AMIS_analysis/plots/rebounds_betadrop_coverage.pdf"),width=12,height=(ceiling(length(iu_rebounds_inds)/panel_ncols)*2))
-  # print(patchwork::wrap_plots(betadrop_coverage[iu_rebounds_inds],nrow = ceiling(length(iu_rebounds_inds)/panel_ncols), ncol = panel_ncols))
+  # print(wrap_plot_panels(betadrop_coverage[iu_rebounds_inds], panel_ncols = panel_ncols))
   # dev.off()
   
 }
@@ -989,7 +1021,7 @@ for (id in c(id_vec)){
       country_code = country_iu_lookup$country[which(country_iu_lookup$IU_ID == iu)]
       iu0 <- sprintf("%05d", as.integer(iu))
 
-      sampled_params_iu <- read.csv(paste0("post_AMIS_analysis/trachoma-source-data-20250225-espen-input-bet-csv/InputBet_",country_code,iu0,".csv"))
+      sampled_params_iu <- read.csv(paste0(inputbet_dir, "/InputBet_",country_code,iu0,".csv"))
 
       # prep data for plot
       beta_vals = sampled_params_iu %>%
@@ -1015,7 +1047,7 @@ for (id in c(id_vec)){
 }
 
 pdf(paste0("post_AMIS_analysis/plots/betatrend_posterior_allIUs.pdf"),width=10,height=panel_nrows*2.5)
-print(patchwork::wrap_plots(beta_plots,nrow = panel_nrows, ncol = panel_ncols))
+print(wrap_plot_panels(beta_plots, panel_ncols = panel_ncols))
 dev.off()
 
 

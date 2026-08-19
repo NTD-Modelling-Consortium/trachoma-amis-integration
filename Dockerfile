@@ -25,7 +25,8 @@ RUN apt update && apt install -y \
     libgdal-dev \
     libudunits2-dev
 
-RUN conda install --override-channels -c conda-forge -c r --yes --name base \
+# mamba (bundled in miniforge3) is more reliable than conda for large mixed R/Python solves.
+RUN mamba install --override-channels -c conda-forge -c r --yes --name base \
     python=3.10 \
     pandas \
     joblib \
@@ -52,6 +53,7 @@ RUN conda install --override-channels -c conda-forge -c r --yes --name base \
 SHELL ["conda", "run", "--no-capture-output", "/bin/bash", "-c"]
 
 RUN Rscript -e "install.packages('weights', repos='https://cran.r-project.org/', lib='/opt/conda/lib/R/library')"
+RUN Rscript -e "install.packages(c('reshape2','patchwork','viridis'), repos='https://cran.r-project.org/', lib='/opt/conda/lib/R/library')"
 RUN Rscript -e "install.packages('AMISforInfectiousDiseases', repos='https://cran.r-project.org/', lib='/opt/conda/lib/R/library')"
 RUN conda clean -a -y
 
