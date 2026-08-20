@@ -121,5 +121,13 @@ ENV PATH_TO_PROJECTIONS_SCRIPTS="$TRACHOMA_AMIS_DIR/projections/scripts"
 ENV RETICULATE_PYTHON=/opt/conda/bin/python
 ENV RETICULATE_PYTHON_FALLBACK=FALSE
 
+ARG GIT_SHA=unknown
+ARG GIT_DIRTY=1
+LABEL ntd.amis.git_sha="${GIT_SHA}" \
+      ntd.amis.git_dirty="${GIT_DIRTY}" \
+      org.opencontainers.image.revision="${GIT_SHA}"
+RUN printf '%s\n' "${GIT_SHA}" > ${TRACHOMA_AMIS_DIR}/.image-git-sha && \
+    printf '%s\n' "${GIT_DIRTY}" > ${TRACHOMA_AMIS_DIR}/.image-git-dirty
+
 VOLUME [${PROJECTIONS_DIR}/artefacts/projections/trachoma]
 ENTRYPOINT [ "python", "run_pipeline.py" ]

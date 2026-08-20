@@ -217,7 +217,7 @@ if [[ -n "${FAILED_IDS}" ]]; then
 fi
 
 echo "Running plot script: ${R_SCRIPT}"
-Rscript -e 'pkgs <- c("reshape2", "patchwork", "viridis"); repos <- "https://cran.r-project.org/"; for (p in pkgs) if (!requireNamespace(p, quietly=TRUE)) install.packages(p, repos=repos)'
+Rscript -e 'pkgs <- c("reshape2", "patchwork", "viridis"); missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly=TRUE)]; if (length(missing)) { cat("Error: missing R packages:", paste(missing, collapse=", "), "\nRebuild the trachoma-amis-pipeline Docker image.\n", file=stderr); quit(status=1) }'
 Rscript "${R_SCRIPT}"
 
 mkdir -p "${PLOT_OUTPUT_DIR}"
