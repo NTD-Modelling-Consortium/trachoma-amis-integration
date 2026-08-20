@@ -20,6 +20,10 @@
 - [Development and Testing](#development-and-testing)
   - [Speeding up the pipeline](#speeding-up-the-pipeline)
   - [Failed Batch Handling](#failed-batch-handling)
+- [Ground-truth plot export (post-fit)](#ground-truth-plot-export-post-fit)
+  - [Wrapper script](#wrapper-script-export_ground_truth_plotssh)
+  - [R plotting script](#r-plotting-script-plot_trachoma_fits_mtpr)
+  - [Running inside Docker](#running-inside-docker)
 - [Notes](#notes)
 
 ## Things to Note
@@ -295,6 +299,98 @@ For batches that failed to reach ESS threshold:
 # Process all IDs except the failed ones in projections-prep
 ./run_container.sh --stage=projections-prep --failed-ids=1,2,3 --folder-id=source-data-20250220
 ```
+
+## Ground-truth plot export (post-fit)
+
+After fitting (and ideally after **projections-prep**, so `InputBet_*.csv` files exist), you can generate **ground-truth diagnostic plots**: prior/posterior trajectories, infections, and parameter panels per IU. These were historically produced by running `post_AMIS_analysis/plot_trachoma_fits_mtp.R` manually on a laptop with a fixed directory layout. They can now be run **inside the Docker image** via `post_AMIS_analysis/export_ground_truth_plots.sh`, which stages the expected layout, invokes the R script, and packages the outputs.
+
+See also [`post_AMIS_analysis/README.md`](post_AMIS_analysis/README.md) for script-level detail.
+
+### Wrapper script (`export_ground_truth_plots.sh`)
+
+Location: `post_AMIS_analysis/export_ground_truth_plots.sh`
+
+The wrapper:
+
+1. Validates that fit artefacts exist (AMIS output, trajectories, infections, InputBet CSVs under projections-prep).
+2. Stages a temporary workspace in the **legacy directory layout** expected by the R script (Maps, AMIS_output, trajectories, infections, InputBet folder under `post_AMIS_analysis/`).
+3. Runs `plot_trachoma_fits_mtp.R`.
+4. Writes canonical bundles under `PLOT_OUTPUT_DIR`:
+   - `trachoma-ground-truth-plots-<RUN_DATE>.tar.gz` — all files from `post_AMIS_analysis/plots/`
+   - `trachoma-ground-truth-plots-<RUN_DATE>.pdf` — merged PDF when PDF plots exist
+   - `trachoma-ground-truth-plots-<RUN_DATE>_preview.png` — first PNG when only PNGs were produced (typical for single-batch subset runs)
+
+**Required environment variables (or CLI flags):**
+
+| Variable | Description |
+|----------|-------------|
+| `FOLDER_ID` | Same as pipeline `--folder-id` (e.g. `source-data-20250225-espen`) |
+| `PLOT_OUTPUT_DIR` | Writable output directory for tarballs/PDFs |
+| `FITTING_ARTEFACTS` | Path to `fitting/artefacts` (host or container) |
+
+**Optional:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FITTING_PREP_ARTEFACTS` | image-baked `fitting-prep/artefacts` | Maps, endgame_inputs (usually from image) |
+| `PROJECTIONS_PREP_ARTEFACTS` | image-baked `projections-prep/artefacts` | Source tree for `InputBet_*.csv` |
+| `INPUTBET_DIR_NAME` | `<folder-id>-input-bet-csv` | Subdir name under staged `post_AMIS_analysis/` |
+| `RUN_DATE` | today (`YYYYMMDD`) | Filename suffix for exports |
+| `FAILED_IDS` | (R script default list) | Comma-separated TaskIDs to skip |
+| `KEEP_WORK_DIR` | `false` | Keep staging temp dir for debugging |
+
+Pass **`PLOT_BATCH_IDS`** (see below) through to the R script when plotting a subset of batches.
+
+### R plotting script (`plot_trachoma_fits_mtp.R`)
+
+Refactored for container use: working directory, InputBet path, and batch selection are driven by environment variables (no hardcoded home directory).
+
+| Environment variable | Purpose |
+|---------------------|---------|
+| `TRACHOMA_PLOT_WORKDIR` | Staging root (set automatically by the wrapper) |
+| `TRACHOMA_INPUTBET_DIR` | Relative path to InputBet CSVs under workdir (default: `post_AMIS_analysis/<folder-id>-input-bet-csv`) |
+| `PLOT_BATCH_IDS` | Comma-separated TaskIDs to plot (subset mode; skips aggregate map sections at end) |
+| `FAILED_IDS` | TaskIDs to exclude when `PLOT_BATCH_IDS` is not set |
+
+**Inputs read from the staged workspace:**
+
+- `Maps/trachoma_maps.rds`, `Maps/trachoma_map_years.rds`, `Maps/table_iu_idx_trachoma.csv` — from **fitting-prep** (image-baked or mounted)
+- `AMIS_output/`, `trajectories/`, `infections/` — from **fitting** artefacts (mount from host when running plot export separately from the pipeline)
+- `projections/trachoma/<folder-id>/.../InputBet_*.csv` — from **projections-prep** (requires ESS above `--ess-threshold`)
+
+**Docker image:** R packages `reshape2`, `patchwork`, `viridis`, and `weights` are pre-installed in the image (`Dockerfile`).
+
+### Running inside Docker
+
+Plot export is **not** a `run_pipeline.py` stage. Run it after stages 1–4 (or after fitting + projections-prep if you only need plots, not near-term projection pickles).
+
+Example — mount persisted artefact directories from the host (same layout as `run_container.sh`):
+
+```shell
+FOLDER_ID=source-data-20250225-espen
+RUN_DATE=20260819
+
+docker run --rm \
+  -e FOLDER_ID=${FOLDER_ID} \
+  -e PLOT_OUTPUT_DIR=/plot-output \
+  -e RUN_DATE=${RUN_DATE} \
+  -e PLOT_BATCH_IDS=10 \
+  -e FITTING_ARTEFACTS=/ntdmc/trachoma-amis-integration/fitting/artefacts \
+  -e PROJECTIONS_PREP_ARTEFACTS=/ntdmc/trachoma-amis-integration/projections-prep/artefacts \
+  -e INPUTBET_DIR_NAME=${FOLDER_ID}-input-bet-csv \
+  -v $(pwd)/fitting/artefacts:/ntdmc/trachoma-amis-integration/fitting/artefacts \
+  -v $(pwd)/projections-prep/artefacts:/ntdmc/trachoma-amis-integration/projections-prep/artefacts \
+  -v $(pwd)/plot-output:/plot-output \
+  --entrypoint bash \
+  trachoma-amis-pipeline:latest \
+  -lc 'bash /ntdmc/trachoma-amis-integration/post_AMIS_analysis/export_ground_truth_plots.sh'
+```
+
+**Notes:**
+
+- **fitting-prep** maps come from the image unless you mount a non-empty host override.
+- **`PLOT_BATCH_IDS`** limits plots to specific batches and **skips** aggregate map/beta sections that require the ESPEN shapefile (`ESPEN_IU_2021/`) and full-run `.Rdata` files — use for single-batch checks or partial reruns.
+- A **full multi-batch run** without `PLOT_BATCH_IDS` generates the complete plot set (including maps), assuming all batch artefacts are available on the host passed to the container.
 
 ## Notes
 

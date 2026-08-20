@@ -69,3 +69,15 @@ Instead, you must remove and re-add it:
 > renv::install("evandrokonzen/AMISforInfectiousDiseases-dev")
 > renv::snapshot()
 ```
+
+## Ground-truth plot export (post-fit)
+
+After fitting (and projections-prep for InputBet files), generate diagnostic fit-vs-survey plots via:
+
+- **Wrapper:** `post_AMIS_analysis/export_ground_truth_plots.sh`
+- **R script:** `post_AMIS_analysis/plot_trachoma_fits_mtp.R`
+
+Full Docker usage and environment variables are documented in:
+
+- [`README-docker-fitting.md`](README-docker-fitting.md#ground-truth-plot-export-post-fit)
+- [`post_AMIS_analysis/README.md`](post_AMIS_analysis/README.md)
